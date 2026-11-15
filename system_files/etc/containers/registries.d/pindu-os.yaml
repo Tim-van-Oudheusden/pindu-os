@@ -1,0 +1,7 @@
+# cosign stores signatures next to the image in the registry; tell the container tools to
+# look there for the repositories that policy.json requires a signature on.
+docker:
+  ghcr.io/tim-van-oudheusden/pindu-os:
+    use-sigstore-attachments: true
+  ghcr.io/tim-van-oudheusden/pindu-os-dev:
+    use-sigstore-attachments: true

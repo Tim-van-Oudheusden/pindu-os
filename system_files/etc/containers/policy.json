@@ -1,0 +1,50 @@
+{
+    "default": [
+        {
+            "type": "insecureAcceptAnything"
+        }
+    ],
+    "transports": {
+        "docker": {
+            "ghcr.io/tim-van-oudheusden/pindu-os": [
+                {
+                    "type": "sigstoreSigned",
+                    "keyPath": "/etc/pki/containers/pindu-os.pub",
+                    "signedIdentity": {
+                        "type": "matchRepository"
+                    }
+                }
+            ],
+            "ghcr.io/tim-van-oudheusden/pindu-os-dev": [
+                {
+                    "type": "sigstoreSigned",
+                    "keyPath": "/etc/pki/containers/pindu-os.pub",
+                    "signedIdentity": {
+                        "type": "matchRepository"
+                    }
+                }
+            ],
+            "registry.access.redhat.com": [
+                {
+                    "type": "sigstoreSigned",
+                    "keyPath": "/etc/pki/sigstore/SIGSTORE-redhat-release3",
+                    "rekorPublicKeyPath": "/etc/pki/sigstore/REKOR-signing-key"
+                }
+            ],
+            "registry.redhat.io": [
+                {
+                    "type": "sigstoreSigned",
+                    "keyPath": "/etc/pki/sigstore/SIGSTORE-redhat-release3",
+                    "rekorPublicKeyPath": "/etc/pki/sigstore/REKOR-signing-key"
+                }
+            ]
+        },
+        "docker-daemon": {
+            "": [
+                {
+                    "type": "insecureAcceptAnything"
+                }
+            ]
+        }
+    }
+}
