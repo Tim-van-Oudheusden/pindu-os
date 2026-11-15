@@ -26,25 +26,8 @@
       currentValueTemplate: "v{{{version}}}",
       autoReplaceStringTemplate: "LAUNCHER_VERSION={{{replace '^v' '' newValue}}}\nLAUNCHER_SHA256={{{newDigest}}}",
     },
-    {
-      // Tool versions written in the workflows: `just-version: "1.2.3"`, `cosign-release: "v1.2.3"`.
-      customType: "regex",
-      managerFilePatterns: ["/^\\.github/workflows/.+\\.yml$/"],
-      matchStrings: [
-        "just-version: \"(?<currentValue>[^\"]+)\"",
-      ],
-      depNameTemplate: "casey/just",
-      datasourceTemplate: "github-releases",
-    },
-    {
-      customType: "regex",
-      managerFilePatterns: ["/^\\.github/workflows/.+\\.yml$/"],
-      matchStrings: [
-        "cosign-release: \"(?<currentValue>[^\"]+)\"",
-      ],
-      depNameTemplate: "sigstore/cosign",
-      datasourceTemplate: "github-releases",
-    },
+    // `just-version` and `cosign-release` in the workflows need no manager here: Renovate's
+    // github-actions manager reads the version inputs of setup-just and cosign-installer.
   ],
   packageRules: [
     {
