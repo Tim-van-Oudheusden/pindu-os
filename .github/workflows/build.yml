@@ -28,7 +28,7 @@ concurrency:
 jobs:
   version:
     name: Version
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
       contents: read
@@ -65,7 +65,9 @@ jobs:
   build:
     name: Build, publish and sign (${{ matrix.variant }})
     needs: version
-    runs-on: ubuntu-26.04
+    # Not ubuntu-26.04: bootc-image-builder cannot mount the container storage on its 7.0
+    # kernel (https://github.com/osbuild/osbuild/issues/2579).
+    runs-on: ubuntu-24.04
     timeout-minutes: 120
     environment: signing
     permissions:

@@ -17,7 +17,7 @@ concurrency:
 jobs:
   lint:
     name: Lint
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - name: Check out
@@ -35,7 +35,9 @@ jobs:
 
   build:
     name: Build and test (${{ matrix.variant }})
-    runs-on: ubuntu-26.04
+    # Not ubuntu-26.04: bootc-image-builder cannot mount the container storage on its 7.0
+    # kernel (https://github.com/osbuild/osbuild/issues/2579).
+    runs-on: ubuntu-24.04
     timeout-minutes: 90
     strategy:
       fail-fast: false

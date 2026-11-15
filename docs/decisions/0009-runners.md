@@ -10,8 +10,10 @@ more free disk than a standard runner has, and the VM tests need KVM.
 
 ## Decision
 
-Use GitHub-hosted runners only (`ubuntu-26.04`). Jobs that build images first free space with
-`ublue-os/remove-unwanted-software`, and KVM is opened to the runner user for the VM tests.
+Use GitHub-hosted runners only (`ubuntu-24.04`). Jobs that build images first free space with
+`ublue-os/remove-unwanted-software`, and KVM is opened to the runner user for the VM tests. `ubuntu-26.04` is out for
+now: on its 7.0 kernel bootc-image-builder cannot mount the container storage
+([osbuild#2579](https://github.com/osbuild/osbuild/issues/2579)).
 
 Code from a pull request never runs in a job that holds a secret or a write token:
 
