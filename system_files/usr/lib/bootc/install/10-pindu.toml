@@ -1,0 +1,4 @@
+# Defaults for `bootc install` and bootc-image-builder. The Fedora base image names no root
+# filesystem; btrfs is Fedora's default for desktops.
+[install.filesystem.root]
+type = "btrfs"

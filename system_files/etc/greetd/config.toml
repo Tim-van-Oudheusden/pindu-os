@@ -1,0 +1,15 @@
+# greetd logs the pindu user in on VT 1 and starts the Pindu session; there is no greeter.
+
+[terminal]
+vt = 1
+
+# First login after boot.
+[initial_session]
+command = "pindu-session"
+user = "pindu"
+
+# What greetd runs whenever no session is running. A greeter would be useless here, because
+# the account has no password, so this is the session again: it comes back after it ends.
+[default_session]
+command = "pindu-session"
+user = "pindu"

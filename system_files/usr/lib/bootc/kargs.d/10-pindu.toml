@@ -1,0 +1,3 @@
+# Kernel arguments of every Pindu OS installation. A console boots without scrolling kernel
+# messages and without a blinking text cursor behind the session.
+kargs = ["quiet", "loglevel=3", "vt.global_cursor_default=0"]

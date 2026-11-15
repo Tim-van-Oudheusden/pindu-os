@@ -1,0 +1,27 @@
+# The Pindu OS session: gamescope with pindu-launcher fullscreen inside it, or cage when
+# gamescope cannot start. /usr/bin/pindu-session (the login script greetd runs) starts this
+# unit and waits for it; it is not enabled and has no [Install] section.
+#
+# The unit carries graphical-session.target, so the portals and other session services start
+# after the compositor is ready and stop when the session ends.
+
+[Unit]
+Description=Pindu session (gamescope and pindu-launcher)
+Documentation=https://github.com/Tim-van-Oudheusden/pindu-os/blob/main/docs/architecture.md
+BindsTo=graphical-session.target
+Before=graphical-session.target
+Wants=graphical-session-pre.target
+After=graphical-session-pre.target
+# The Secret Service provider, up before the launcher asks for its SteamGridDB key. Without
+# this, D-Bus activation starts a second gnome-keyring-daemon next to the systemd one.
+Wants=gnome-keyring-daemon.service
+After=gnome-keyring-daemon.service
+
+[Service]
+# Ready when `pindu-session client` has published the display and is about to exec the
+# launcher. Two failed gamescope starts and the cage fallback fit well inside the timeout.
+Type=notify
+NotifyAccess=all
+TimeoutStartSec=90
+ExecStart=/usr/bin/pindu-session compositor
+# No Restart=: when the session ends, the login script returns and greetd starts a new one.

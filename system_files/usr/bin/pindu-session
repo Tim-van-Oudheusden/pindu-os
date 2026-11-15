@@ -1,0 +1,135 @@
+#!/usr/bin/bash
+# pindu-session: the login session of Pindu OS.
+#
+#   pindu-session             Login entry point, started by greetd. Hands the session
+#                             environment to the systemd user manager, starts
+#                             pindu-session.service and waits for it to end.
+#   pindu-session compositor  ExecStart of pindu-session.service. Runs the launcher inside
+#                             gamescope, or inside cage when gamescope cannot stay up.
+#   pindu-session client      Runs inside the compositor. Publishes the display to the user
+#                             manager and D-Bus, reports readiness, then becomes the launcher.
+set -euo pipefail
+
+# A gamescope run shorter than this many seconds counts as a failed start.
+readonly MIN_UPTIME=${PINDU_SESSION_MIN_UPTIME:-10}
+# Quick gamescope exits in a row before cage takes over.
+readonly MAX_QUICK_EXITS=2
+# Where the kernel lists the connected displays; a variable so tests can point elsewhere.
+readonly DRM_ROOT=${PINDU_SESSION_DRM_ROOT:-/sys/class/drm}
+
+readonly LAUNCHER=(pindu-launcher --fullscreen)
+readonly SESSION_VARS=(XDG_CURRENT_DESKTOP XDG_SESSION_DESKTOP XDG_SESSION_ID XDG_SESSION_CLASS XDG_SEAT XDG_VTNR)
+readonly DISPLAY_VARS=(DISPLAY WAYLAND_DISPLAY GAMESCOPE_WAYLAND_DISPLAY XAUTHORITY XDG_SESSION_TYPE GDK_BACKEND)
+
+log() {
+    echo "pindu-session: $*" >&2
+}
+
+# Print the names in "$@" that are set, for tools that reject unset variables.
+set_vars() {
+    local name
+    for name in "$@"; do
+        [[ -v ${name} ]] && echo "${name}"
+    done
+    return 0
+}
+
+login() {
+    # The portals pick their backend by desktop name (gamescope-portals.conf), also under cage.
+    export XDG_CURRENT_DESKTOP=gamescope
+    export XDG_SESSION_DESKTOP=pindu
+
+    local vars started
+    mapfile -t vars < <(set_vars "${SESSION_VARS[@]}")
+    dbus-update-activation-environment --systemd "${vars[@]}"
+
+    started=${SECONDS}
+    systemctl --user start --wait pindu-session.service ||
+        log "pindu-session.service ended with a failure; see journalctl --user -u pindu-session"
+
+    # graphical-session.target and the portals stop with the unit. Take the display back out
+    # of the user manager so nothing started later tries to reach a compositor that is gone.
+    systemctl --user unset-environment "${DISPLAY_VARS[@]}"
+
+    # greetd starts the session again as soon as this script returns. Do not let a session
+    # that cannot start spin the machine.
+    if ((SECONDS - started < MIN_UPTIME)); then
+        sleep "${MIN_UPTIME}"
+    fi
+}
+
+# Under Xwayland the launcher draws at scale 1, so on a display taller than 1080 lines
+# gamescope renders it at 1080 lines and upscales. Prints the gamescope arguments for that,
+# or nothing when the first connected display is 1080 lines or smaller.
+gamescope_size_args() {
+    local connector mode width height
+    for connector in "${DRM_ROOT}"/card*-*; do
+        [[ -r ${connector}/status && $(<"${connector}/status") == connected ]] || continue
+        # The first line of `modes` is the display's preferred mode, as WIDTHxHEIGHT.
+        read -r mode <"${connector}/modes" || continue
+        mode=${mode%%[!0-9x]*}
+        width=${mode%x*}
+        height=${mode#*x}
+        [[ ${width} =~ ^[0-9]+$ && ${height} =~ ^[0-9]+$ ]] || continue
+        if ((height > 1080)); then
+            # Same aspect ratio, even width.
+            echo "-w $((width * 1080 / height / 2 * 2)) -h 1080"
+        fi
+        return 0
+    done
+    return 0
+}
+
+compositor() {
+    local quick_exits=0 started status size_args extra_args
+    read -r -a size_args <<<"$(gamescope_size_args)"
+    # Extra gamescope arguments for hardware testing, set with
+    # `systemctl --user edit pindu-session.service` (Environment=PINDU_GAMESCOPE_ARGS=...).
+    read -r -a extra_args <<<"${PINDU_GAMESCOPE_ARGS:-}"
+
+    while ((quick_exits < MAX_QUICK_EXITS)); do
+        started=${SECONDS}
+        status=0
+        gamescope --backend drm "${size_args[@]}" "${extra_args[@]}" -- "$0" client || status=$?
+        if ((SECONDS - started >= MIN_UPTIME)); then
+            # gamescope ran and ended, with the launcher or by itself: the session is over.
+            exit "${status}"
+        fi
+        quick_exits=$((quick_exits + 1))
+        log "gamescope exited with status ${status} after $((SECONDS - started)) s (${quick_exits}/${MAX_QUICK_EXITS})"
+    done
+
+    log "gamescope cannot stay up, starting the launcher in cage instead"
+    exec cage -- "$0" client
+}
+
+client() {
+    if [[ -n ${GAMESCOPE_WAYLAND_DISPLAY:-} ]]; then
+        # gamescope: the launcher, and the games it starts, are X11 clients on its Xwayland.
+        export XDG_SESSION_TYPE=x11
+        export GDK_BACKEND=x11
+    else
+        export XDG_SESSION_TYPE=wayland
+    fi
+
+    local vars
+    mapfile -t vars < <(set_vars "${DISPLAY_VARS[@]}")
+    dbus-update-activation-environment --systemd "${vars[@]}"
+
+    # The compositor is up and the display is published: pindu-session.service is started.
+    if [[ -n ${NOTIFY_SOCKET:-} ]]; then
+        systemd-notify --ready
+    fi
+
+    exec "${LAUNCHER[@]}"
+}
+
+case "${1:-}" in
+"") login ;;
+compositor) compositor ;;
+client) client ;;
+*)
+    echo "usage: pindu-session [compositor|client]" >&2
+    exit 64
+    ;;
+esac
