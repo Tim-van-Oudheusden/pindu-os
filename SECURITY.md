@@ -71,7 +71,11 @@ Every published image is signed with the project's cosign key, and devices refus
 image yourself:
 
 ```sh
-cosign verify --key https://raw.githubusercontent.com/Tim-van-Oudheusden/pindu-os/main/cosign.pub \
+cosign verify --new-bundle-format=false \
+    --key https://raw.githubusercontent.com/Tim-van-Oudheusden/pindu-os/main/cosign.pub \
     ghcr.io/tim-van-oudheusden/pindu-os:stable
 gh attestation verify oci://ghcr.io/tim-van-oudheusden/pindu-os:stable --repo Tim-van-Oudheusden/pindu-os
 ```
+
+`--new-bundle-format=false` makes cosign 3 read the signature in the classic format, which is the one the devices
+check. Without it, cosign looks only at the attestations and reports "expected key signature, not certificate".

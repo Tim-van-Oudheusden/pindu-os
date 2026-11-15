@@ -136,13 +136,15 @@ sudo systemctl reboot
 ## Checking an image yourself
 
 ```sh
-cosign verify --key https://raw.githubusercontent.com/Tim-van-Oudheusden/pindu-os/main/cosign.pub \
+cosign verify --new-bundle-format=false \
+    --key https://raw.githubusercontent.com/Tim-van-Oudheusden/pindu-os/main/cosign.pub \
     ghcr.io/tim-van-oudheusden/pindu-os:stable
 gh attestation verify oci://ghcr.io/tim-van-oudheusden/pindu-os:stable --repo Tim-van-Oudheusden/pindu-os
 ```
 
 The first command checks the project's signature, the second that the image was built by this repository's workflow
-from a commit on `main`.
+from a commit on `main`. `--new-bundle-format=false` makes cosign 3 read the signature in the classic format, which is
+the one the devices check; without it cosign reports "expected key signature, not certificate".
 
 ## When something is wrong
 

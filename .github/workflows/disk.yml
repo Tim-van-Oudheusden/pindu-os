@@ -122,8 +122,10 @@ jobs:
             echo "::error::'${REF}' is neither a tag nor a sha256: digest"
             exit 1
           fi
-          # Disk images are only made from images that carry our signature.
-          cosign verify --key cosign.pub "${image}@${digest}" >/dev/null
+          # Disk images are only made from images that carry our signature. It is in the classic
+          # format; without the flag cosign 3 looks only at the image's attestations, finds
+          # GitHub's keyless ones and fails with "expected key signature, not certificate".
+          cosign verify --new-bundle-format=false --key cosign.pub "${image}@${digest}" >/dev/null
           podman pull "${image}@${digest}"
           podman tag "${image}@${digest}" "localhost/${name}:local"
           echo "name=${name}" >>"${GITHUB_OUTPUT}"

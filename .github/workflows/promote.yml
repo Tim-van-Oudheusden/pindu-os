@@ -74,7 +74,9 @@ jobs:
           # Resolve the tag once, so the check and the retag act on the same image even if
           # a build moves the tag in between.
           digest=$(skopeo inspect --no-tags --format '{{.Digest}}' "docker://${image}:${SOURCE}")
-          cosign verify --key cosign.pub "${image}@${digest}" >/dev/null
+          # The signature is in the classic format; without the flag cosign 3 looks only at the
+          # image's attestations, finds GitHub's keyless ones and fails.
+          cosign verify --new-bundle-format=false --key cosign.pub "${image}@${digest}" >/dev/null
 
           skopeo copy --all --preserve-digests "docker://${image}@${digest}" "docker://${image}:stable"
           promoted=$(skopeo inspect --no-tags --format '{{.Digest}}' "docker://${image}:stable")
