@@ -81,9 +81,10 @@ verify-inputs:
         status=1
     fi
 
-    # The akmods image is signed by Universal Blue; build_files/ublue-os-akmods.pub is their key.
+    # The akmods image is signed by Universal Blue; build_files/ublue-os-akmods.pub is their
+    # key. The signature is in cosign's classic format, like ours.
     akmods="${AKMODS_IMAGE%%:*}@${AKMODS_IMAGE##*@}"
-    if cosign verify --key build_files/ublue-os-akmods.pub "${akmods}" >/dev/null 2>&1; then
+    if cosign verify --new-bundle-format=false --key build_files/ublue-os-akmods.pub "${akmods}" >/dev/null 2>&1; then
         echo "ok    AKMODS_IMAGE is signed by Universal Blue"
     else
         echo "FAIL  AKMODS_IMAGE has no valid Universal Blue signature"
