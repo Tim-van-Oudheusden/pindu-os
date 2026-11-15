@@ -1,0 +1,8 @@
+# bootc-image-builder configuration for the qcow2 and raw disk images.
+#
+# The root filesystem is at least 20 GiB, so that a freshly written image has room for one
+# staged update (a second copy of the system) and a first game. In a VM the root filesystem
+# grows to the size of the disk on first boot.
+[[customizations.filesystem]]
+mountpoint = "/"
+minsize = "20 GiB"

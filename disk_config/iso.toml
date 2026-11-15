@@ -1,0 +1,37 @@
+# bootc-image-builder configuration for the installer ISO.
+#
+# WARNING: the installer is unattended. It erases every disk of the machine it boots on and
+# installs to it without asking. docs/install.md says so before the download link.
+#
+# bootc-image-builder adds the command that installs the image embedded in the ISO. The
+# %post step then points the installed system at the registry, so updates come from the
+# stable channel of the same image (pindu-os or pindu-os-dev, read from its os-release) and
+# must carry our signature.
+[customizations.installer.kickstart]
+contents = """
+text --non-interactive
+zerombr
+clearpart --all --initlabel --disklabel=gpt
+autopart --type=btrfs --noswap
+reboot --eject
+
+%post --erroronfail
+. /usr/lib/os-release
+bootc switch --mutate-in-place --enforce-container-sigpolicy --transport registry "ghcr.io/tim-van-oudheusden/${IMAGE_ID}:stable"
+%end
+"""
+
+# Only the installer parts an unattended installation uses.
+[customizations.installer.modules]
+enable = [
+    "org.fedoraproject.Anaconda.Modules.Storage",
+    "org.fedoraproject.Anaconda.Modules.Runtime",
+]
+disable = [
+    "org.fedoraproject.Anaconda.Modules.Network",
+    "org.fedoraproject.Anaconda.Modules.Security",
+    "org.fedoraproject.Anaconda.Modules.Services",
+    "org.fedoraproject.Anaconda.Modules.Users",
+    "org.fedoraproject.Anaconda.Modules.Subscription",
+    "org.fedoraproject.Anaconda.Modules.Timezone",
+]

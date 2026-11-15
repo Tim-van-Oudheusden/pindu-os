@@ -1,0 +1,8 @@
+# hadolint rules that do not fit this Containerfile.
+ignored:
+  # "Always tag the version of an image explicitly": every FROM is a build argument that
+  # image.env pins by digest.
+  - DL3006
+  # "Use the -y switch / pin versions in dnf install": packages are installed by the scripts
+  # in build_files/, and the image tracks Fedora's current versions on purpose.
+  - DL3041
