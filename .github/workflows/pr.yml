@@ -62,6 +62,17 @@ jobs:
           sudo apt-get update
           sudo apt-get install --yes --no-install-recommends podman jq qemu-system-x86 qemu-utils ovmf
 
+      - name: Lay out root's container storage for bootc-image-builder
+        run: |
+          # bootc-image-builder mounts /var/lib/containers/storage into its build sandbox, which
+          # fails on GitHub's runners with their stock storage configuration
+          # (https://github.com/osbuild/bootc-image-builder/issues/446). This is the fix that
+          # osbuild/bootc-image-builder-action applies.
+          sudo rm -rf /var/lib/containers/storage
+          sudo mkdir -p /etc/containers
+          printf '[storage]\ndriver = "overlay"\nrunroot = "/run/containers/storage"\ngraphroot = "/var/lib/containers/storage"\n' |
+            sudo tee /etc/containers/storage.conf
+
       - name: Allow KVM for the runner user
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' |
