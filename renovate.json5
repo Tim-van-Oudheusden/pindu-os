@@ -48,6 +48,12 @@
   ],
   packageRules: [
     {
+      // The runner stays on ubuntu-24.04 until bootc-image-builder works on ubuntu-26.04's
+      // kernel (https://github.com/osbuild/osbuild/issues/2579). Moving it is a manual change.
+      matchDatasources: ["github-runners"],
+      enabled: false,
+    },
+    {
       // A Fedora release bump is manual: FEDORA_VERSION, the base tag, the akmods tag and the
       // launcher RPM's dist tag move together. Renovate only follows the digest of the pinned tag.
       matchPackageNames: ["quay.io/fedora/fedora-bootc", "ghcr.io/ublue-os/akmods"],
