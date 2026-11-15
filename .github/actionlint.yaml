@@ -1,0 +1,6 @@
+# actionlint configuration: https://github.com/rhysd/actionlint/blob/main/docs/config.md
+self-hosted-runner:
+  # ubuntu-26.04 is a GitHub-hosted runner (Podman 5.7, Buildah 1.42) that actionlint 1.7.12
+  # does not know yet. Remove the entry once ACTIONLINT_IMAGE in image.env knows the label.
+  labels:
+    - ubuntu-26.04

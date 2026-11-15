@@ -1,0 +1,249 @@
+name: Build
+
+# Builds both variants from main, publishes them to GHCR as :testing and as an immutable
+# <fedora>.<date>.<n> tag, signs the digest with the cosign key, attaches build provenance
+# and an SBOM, and boots the published digest in a VM.
+#
+# Only code that is already on main runs here. The cosign key lives in the "signing"
+# environment, which is restricted to main (docs/runbook.md, "Signing key").
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "docs/**"
+      - "**.md"
+  schedule:
+    # Once a day, to pick up Fedora updates of the packages the build installs.
+    - cron: "17 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  version:
+    name: Version
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      packages: read # list the tags already published today
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install skopeo
+        run: command -v skopeo >/dev/null || { sudo apt-get update && sudo apt-get install --yes skopeo; }
+
+      - name: Pick the next <fedora>.<date>.<n>
+        id: version
+        env:
+          REPOSITORY_OWNER: ${{ github.repository_owner }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          set -euo pipefail
+          source image.env
+          prefix="${FEDORA_VERSION}.$(date -u +%Y%m%d)"
+          # No tag list yet means this is the first build ever: start at 0.
+          tags=$(skopeo list-tags --creds "${ACTOR}:${GITHUB_TOKEN}" \
+            "docker://ghcr.io/${REPOSITORY_OWNER,,}/pindu-os" 2>/dev/null | jq -r '.Tags[]' || true)
+          last=$(grep -E "^${prefix//./\\.}\.[0-9]+$" <<<"${tags}" | sed 's/.*\.//' | sort -n | tail -n 1 || true)
+          version="${prefix}.$((${last:--1} + 1))"
+          echo "version=${version}" >>"${GITHUB_OUTPUT}"
+          echo "Version: ${version}" >>"${GITHUB_STEP_SUMMARY}"
+
+  build:
+    name: Build, publish and sign (${{ matrix.variant }})
+    needs: version
+    runs-on: ubuntu-26.04
+    timeout-minutes: 120
+    environment: signing
+    permissions:
+      contents: read
+      packages: write # push the image, its signature and its attestations to GHCR
+      id-token: write # identity of this run for the attestations (Sigstore)
+      attestations: write # store the provenance and SBOM attestations
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [prod, dev]
+    env:
+      VARIANT: ${{ matrix.variant }}
+      IMAGE_VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - name: Free disk space
+        uses: ublue-os/remove-unwanted-software@cc0becac701cf642c8f0a6613bbdaf5dc36b259e # v9
+
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Refuse to publish an image that cannot be verified
+        env:
+          COSIGN_PRIVATE_KEY: ${{ secrets.SIGNING_SECRET }}
+        run: |
+          set -euo pipefail
+          if [[ ! -s cosign.pub ]] || ! cmp cosign.pub system_files/etc/pki/containers/pindu-os.pub; then
+            echo "::error::cosign.pub is missing or differs from the key in system_files (docs/runbook.md, Signing key)"
+            exit 1
+          fi
+          if [[ -z "${COSIGN_PRIVATE_KEY}" ]]; then
+            echo "::error::The signing environment has no SIGNING_SECRET (docs/runbook.md, Signing key)"
+            exit 1
+          fi
+
+      - name: Install just
+        uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4
+        with:
+          just-version: "1.58.0"
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532 # v4.1.3
+        with:
+          cosign-release: "v3.1.4"
+
+      - name: Install container and VM tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends podman skopeo jq qemu-system-x86 qemu-utils ovmf
+
+      - name: Allow KVM for the runner user
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' |
+            sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Verify the pinned inputs
+        run: just verify-inputs
+
+      - name: Build the image (includes bootc container lint)
+        run: just build "${VARIANT}"
+
+      - name: Container tests
+        run: just test "${VARIANT}"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push :testing and the version tag
+        id: push
+        env:
+          REPOSITORY_OWNER: ${{ github.repository_owner }}
+        run: |
+          set -euo pipefail
+          name=$(just image-name "${VARIANT}")
+          image="ghcr.io/${REPOSITORY_OWNER,,}/${name}"
+          podman push --digestfile "${RUNNER_TEMP}/digest" "localhost/${name}:local" "${image}:testing"
+          digest=$(<"${RUNNER_TEMP}/digest")
+          # The version tag is the same manifest, not a second push that could differ.
+          skopeo copy --all --preserve-digests "docker://${image}@${digest}" "docker://${image}:${IMAGE_VERSION}"
+          echo "image=${image}" >>"${GITHUB_OUTPUT}"
+          echo "digest=${digest}" >>"${GITHUB_OUTPUT}"
+          echo "\`${image}:${IMAGE_VERSION}\` is \`${digest}\`" >>"${GITHUB_STEP_SUMMARY}"
+
+      - name: Sign the digest
+        env:
+          COSIGN_PRIVATE_KEY: ${{ secrets.SIGNING_SECRET }}
+          IMAGE: ${{ steps.push.outputs.image }}
+          DIGEST: ${{ steps.push.outputs.digest }}
+        run: |
+          set -euo pipefail
+          # The container tools on the device read the classic signature format, not
+          # cosign 3's bundle format (https://github.com/containers/container-libs/issues/388).
+          cosign sign --yes --new-bundle-format=false --use-signing-config=false \
+            --key env://COSIGN_PRIVATE_KEY "${IMAGE}@${DIGEST}"
+          cosign verify --key cosign.pub "${IMAGE}@${DIGEST}" >/dev/null
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-name: ${{ steps.push.outputs.image }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
+
+      - name: Generate the SBOM
+        env:
+          IMAGE: ${{ steps.push.outputs.image }}
+          DIGEST: ${{ steps.push.outputs.digest }}
+        run: |
+          set -euo pipefail
+          source image.env
+          # The packages of the image, from its RPM database.
+          podman run --rm \
+            --volume "${HOME}/.docker/config.json:/docker/config.json:ro" \
+            --env DOCKER_CONFIG=/docker \
+            --volume "${RUNNER_TEMP}:/out" \
+            "${SYFT_IMAGE}" scan "registry:${IMAGE}@${DIGEST}" \
+            --override-default-catalogers rpm-db-cataloger \
+            --select-catalogers=-file \
+            --output "spdx-json=/out/sbom-with-files.spdx.json"
+          # syft also lists every file a package owns (about 45,000 entries, 25 MB), which is
+          # more than an attestation may hold. Keep the packages and how they depend on each other.
+          jq --compact-output '
+            del(.files)
+            | .relationships |= map(select(
+                ((.spdxElementId // "") | startswith("SPDXRef-File-") | not) and
+                ((.relatedSpdxElement // "") | startswith("SPDXRef-File-") | not)))
+          ' "${RUNNER_TEMP}/sbom-with-files.spdx.json" >"${RUNNER_TEMP}/sbom.spdx.json"
+          jq --exit-status '(.packages | length) > 100' "${RUNNER_TEMP}/sbom.spdx.json" >/dev/null
+
+      - name: Attest the SBOM
+        uses: actions/attest-sbom@c604332985a26aa8cf1bdc465b92731239ec6b9e # v4.1.0
+        with:
+          subject-name: ${{ steps.push.outputs.image }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          sbom-path: ${{ runner.temp }}/sbom.spdx.json
+          push-to-registry: true
+
+      - name: Verify the attestations
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          IMAGE: ${{ steps.push.outputs.image }}
+          DIGEST: ${{ steps.push.outputs.digest }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          gh attestation verify "oci://${IMAGE}@${DIGEST}" --repo "${REPOSITORY}"
+          gh attestation verify "oci://${IMAGE}@${DIGEST}" --repo "${REPOSITORY}" \
+            --predicate-type https://spdx.dev/Document/v2.3
+
+      - name: Build a qcow2 from the published digest
+        env:
+          IMAGE: ${{ steps.push.outputs.image }}
+          DIGEST: ${{ steps.push.outputs.digest }}
+        run: |
+          set -euo pipefail
+          name=$(just image-name "${VARIANT}")
+          podman pull "${IMAGE}@${DIGEST}"
+          podman tag "${IMAGE}@${DIGEST}" "localhost/${name}:local"
+          just build-qcow2 "${VARIANT}"
+
+      - name: VM boot test
+        run: just test-vm "${VARIANT}"
+
+      - name: Upload the screenshot and the guest's report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: vm-boot-${{ matrix.variant }}
+          path: |
+            output/${{ matrix.variant }}/test-boot/screenshot.*
+            output/${{ matrix.variant }}/test-boot/*.log
+          if-no-files-found: warn
+          retention-days: 14

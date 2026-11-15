@@ -1,0 +1,81 @@
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  // Every bump is a pull request that has to pass pr.yml before it merges. Nothing merges by itself.
+  extends: ["config:recommended", "helpers:pinGitHubActionDigests"],
+  semanticCommits: "enabled",
+  customManagers: [
+    {
+      // Container images in image.env: KEY_IMAGE=name:tag@sha256:digest
+      customType: "regex",
+      managerFilePatterns: ["/^image\\.env$/"],
+      matchStrings: [
+        "(?m)^[A-Z_]+_IMAGE=(?<depName>[^:@\\s]+):(?<currentValue>[^@\\s]+)@(?<currentDigest>sha256:[a-f0-9]{64})$",
+      ],
+      datasourceTemplate: "docker",
+    },
+    {
+      // The launcher RPM: the release version and the SHA-256 of the release attachment.
+      customType: "regex",
+      managerFilePatterns: ["/^image\\.env$/"],
+      matchStrings: [
+        "(?m)^LAUNCHER_VERSION=(?<version>\\S+)\\n+LAUNCHER_SHA256=(?<currentDigest>[a-f0-9]{64})$",
+      ],
+      depNameTemplate: "Tim-van-Oudheusden/pindu-launcher",
+      datasourceTemplate: "github-release-attachments",
+      // The release tag is v0.3.0, image.env holds 0.3.0 (the RPM's version).
+      currentValueTemplate: "v{{{version}}}",
+      autoReplaceStringTemplate: "LAUNCHER_VERSION={{{replace '^v' '' newValue}}}\nLAUNCHER_SHA256={{{newDigest}}}",
+    },
+    {
+      // Tool versions written in the workflows: `just-version: "1.2.3"`, `cosign-release: "v1.2.3"`.
+      customType: "regex",
+      managerFilePatterns: ["/^\\.github/workflows/.+\\.yml$/"],
+      matchStrings: [
+        "just-version: \"(?<currentValue>[^\"]+)\"",
+      ],
+      depNameTemplate: "casey/just",
+      datasourceTemplate: "github-releases",
+    },
+    {
+      customType: "regex",
+      managerFilePatterns: ["/^\\.github/workflows/.+\\.yml$/"],
+      matchStrings: [
+        "cosign-release: \"(?<currentValue>[^\"]+)\"",
+      ],
+      depNameTemplate: "sigstore/cosign",
+      datasourceTemplate: "github-releases",
+    },
+  ],
+  packageRules: [
+    {
+      // A Fedora release bump is manual: FEDORA_VERSION, the base tag, the akmods tag and the
+      // launcher RPM's dist tag move together. Renovate only follows the digest of the pinned tag.
+      matchPackageNames: ["quay.io/fedora/fedora-bootc", "ghcr.io/ublue-os/akmods"],
+      matchUpdateTypes: ["major", "minor", "patch"],
+      enabled: false,
+    },
+    {
+      // These tags move every day. One pull request a week is enough; the daily build picks up
+      // Fedora's package updates in between.
+      matchPackageNames: [
+        "quay.io/fedora/fedora-bootc",
+        "ghcr.io/ublue-os/akmods",
+        "quay.io/centos-bootc/bootc-image-builder",
+      ],
+      matchUpdateTypes: ["digest"],
+      schedule: ["before 6am on monday"],
+      groupName: "base image, kernel and image builder digests",
+    },
+    {
+      // cosign's major versions change the signature format the devices read; never bump it unreviewed.
+      matchPackageNames: ["sigstore/cosign"],
+      matchUpdateTypes: ["major"],
+      dependencyDashboardApproval: true,
+    },
+    {
+      matchManagers: ["github-actions"],
+      groupName: "GitHub Actions",
+      matchUpdateTypes: ["minor", "patch", "digest"],
+    },
+  ],
+}

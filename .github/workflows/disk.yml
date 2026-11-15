@@ -1,0 +1,171 @@
+name: Disk images
+
+# Turns a published, signed image into qcow2, raw and installer ISO files with
+# bootc-image-builder, and tests the two that can boot in QEMU. The files are workflow
+# artifacts: GitHub Releases caps a file at 2 GB, which the ISO exceeds.
+
+on:
+  workflow_dispatch:
+    inputs:
+      variant:
+        description: "Image variant"
+        type: choice
+        options: [prod, dev]
+        default: prod
+        required: true
+      ref:
+        description: "Tag or sha256: digest to build from"
+        type: string
+        default: stable
+        required: true
+  workflow_call:
+    inputs:
+      variant:
+        type: string
+        required: true
+      ref:
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ inputs.variant }}-${{ inputs.ref }}
+  cancel-in-progress: false
+
+jobs:
+  disk:
+    name: ${{ matrix.type }} (${{ inputs.variant }})
+    runs-on: ubuntu-26.04
+    timeout-minutes: 120
+    permissions:
+      contents: read
+      packages: read # pull the image from GHCR
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - type: qcow2
+            recipe: build-qcow2
+            test: test-vm
+            output: qcow2/disk.qcow2
+          - type: raw
+            recipe: build-raw
+            test: ""
+            output: image/disk.raw
+          - type: iso
+            recipe: build-iso
+            test: test-install
+            output: bootiso/install.iso
+    env:
+      VARIANT: ${{ inputs.variant }}
+      REF: ${{ inputs.ref }}
+      RECIPE: ${{ matrix.recipe }}
+      TEST: ${{ matrix.test }}
+      OUTPUT: ${{ matrix.output }}
+    steps:
+      - name: Free disk space
+        uses: ublue-os/remove-unwanted-software@cc0becac701cf642c8f0a6613bbdaf5dc36b259e # v9
+
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install just
+        uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4
+        with:
+          just-version: "1.58.0"
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532 # v4.1.3
+        with:
+          cosign-release: "v3.1.4"
+
+      - name: Install container and VM tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends podman skopeo jq qemu-system-x86 qemu-utils ovmf zstd
+
+      - name: Allow KVM for the runner user
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' |
+            sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Log in to GHCR
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resolve, verify and pull the image
+        id: image
+        env:
+          REPOSITORY_OWNER: ${{ github.repository_owner }}
+        run: |
+          set -euo pipefail
+          case "${VARIANT}" in
+            prod | dev) ;;
+            *) echo "::error::unknown variant '${VARIANT}'"; exit 1 ;;
+          esac
+          name=$(just image-name "${VARIANT}")
+          image="ghcr.io/${REPOSITORY_OWNER,,}/${name}"
+          if [[ "${REF}" =~ ^sha256:[a-f0-9]{64}$ ]]; then
+            digest="${REF}"
+          elif [[ "${REF}" =~ ^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$ ]]; then
+            digest=$(skopeo inspect --no-tags --format '{{.Digest}}' "docker://${image}:${REF}")
+          else
+            echo "::error::'${REF}' is neither a tag nor a sha256: digest"
+            exit 1
+          fi
+          # Disk images are only made from images that carry our signature.
+          cosign verify --key cosign.pub "${image}@${digest}" >/dev/null
+          podman pull "${image}@${digest}"
+          podman tag "${image}@${digest}" "localhost/${name}:local"
+          echo "name=${name}" >>"${GITHUB_OUTPUT}"
+          echo "\`${image}@${digest}\`" >>"${GITHUB_STEP_SUMMARY}"
+
+      - name: Build the disk image
+        run: just "${RECIPE}" "${VARIANT}"
+
+      - name: Test the disk image in a VM
+        if: matrix.test != ''
+        run: just "${TEST}" "${VARIANT}"
+
+      - name: Checksum and compress
+        id: package
+        env:
+          NAME: ${{ steps.image.outputs.name }}
+        run: |
+          set -euo pipefail
+          file="output/${VARIANT}/${OUTPUT}"
+          mkdir -p dist
+          case "${file}" in
+            *.iso) cp --reflink=auto "${file}" "dist/${NAME}.iso" ;;
+            *) zstd -T0 -10 "${file}" -o "dist/${NAME}.${file##*.}.zst" ;;
+          esac
+          (cd dist && sha256sum -- * >SHA256SUMS && cat SHA256SUMS)
+
+      - name: Upload the disk image
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ${{ steps.image.outputs.name }}-${{ matrix.type }}
+          path: dist/
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 30
+
+      - name: Upload the test screenshots and reports
+        if: always() && matrix.test != ''
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: vm-test-${{ inputs.variant }}-${{ matrix.type }}
+          path: |
+            output/${{ inputs.variant }}/test-*/**/screenshot.*
+            output/${{ inputs.variant }}/test-*/**/*.log
+          if-no-files-found: warn
+          retention-days: 14

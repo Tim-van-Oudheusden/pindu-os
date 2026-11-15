@@ -1,0 +1,26 @@
+# Code owners: the maintainer owns the paths that decide what CI may do, which inputs the
+# image is built from, what devices trust and what agents are told. A pull request that
+# touches one requests his review. Everything else has no owner.
+#
+# Patterns use .gitignore syntax: a leading `/` anchors to the repository root.
+
+# CI workflows, their permissions and signing steps, and this file itself.
+/.github/                               @Tim-van-Oudheusden
+
+# Every pinned input, and the Renovate rules that bump them.
+/image.env                              @Tim-van-Oudheusden
+/renovate.json5                         @Tim-van-Oudheusden
+
+# What devices trust: the signature policy and the public keys.
+/cosign.pub                             @Tim-van-Oudheusden
+/system_files/etc/containers/           @Tim-van-Oudheusden
+/system_files/etc/pki/                  @Tim-van-Oudheusden
+/build_files/ublue-os-akmods.pub        @Tim-van-Oudheusden
+
+# Package repositories of the build, and the dev image's ways in (SSH, sudo).
+/build_files/10-repos.sh                @Tim-van-Oudheusden
+/build_files/80-variant-dev.sh          @Tim-van-Oudheusden
+
+# Agent instructions.
+/AGENTS.md                              @Tim-van-Oudheusden
+/CLAUDE.md                              @Tim-van-Oudheusden
