@@ -9,7 +9,7 @@ the cost; when a decision changes, add a new record rather than rewriting an acc
 | 0001 | [Base image](0001-base-image.md) | `quay.io/fedora/fedora-bootc:45`, pinned by digest in `image.env`. |
 | 0002 | [Kernel](0002-kernel.md) | Stock Fedora kernel; `KERNEL_FLAVOR=ogc` swaps in the prebuilt OGC kernel. |
 | 0003 | [Session](0003-session.md) | gamescope on DRM, cage as fallback, run by our own `pindu-session`. |
-| 0004 | [Login](0004-login.md) | greetd autologin; `default_session` restarts the same session. |
+| 0004 | [Login](0004-login.md) | greetd autologin; a session that ends comes back through a restart of greetd. |
 | 0005 | [Launcher delivery](0005-launcher-delivery.md) | The launcher's release RPM, pinned by version and SHA-256. |
 | 0006 | [Updates](0006-updates.md) | `bootc upgrade` staged for the next boot; `:testing`, `:stable`, dated tags. |
 | 0007 | [Trust](0007-trust.md) | cosign key signature enforced by `policy.json`; provenance and an SBOM. |

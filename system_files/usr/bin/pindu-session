@@ -51,8 +51,8 @@ login() {
     # of the user manager so nothing started later tries to reach a compositor that is gone.
     systemctl --user unset-environment "${DISPLAY_VARS[@]}"
 
-    # greetd starts the session again as soon as this script returns. Do not let a session
-    # that cannot start spin the machine.
+    # greetd restarts and logs pindu in again as soon as this script returns. Do not let a
+    # session that cannot start spin the machine or exhaust greetd.service's start limit.
     if ((SECONDS - started < MIN_UPTIME)); then
         sleep "${MIN_UPTIME}"
     fi
