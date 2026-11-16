@@ -1,0 +1,26 @@
+// What the launcher's system panel may do as the pindu user without a password
+// (https://github.com/Tim-van-Oudheusden/pindu-launcher/blob/main/docs/system-panel.md#pindu-os-side).
+// The gamescope session has no polkit agent, so anything that would ask for authentication
+// fails there. Fedora's defaults already allow the active session logind's power off, reboot
+// and suspend, and NetworkManager's network-control and wifi.scan; this file grants the rest,
+// to pindu in an active local session only.
+polkit.addRule(function (action, subject) {
+    if (subject.user !== "pindu" || !subject.local || !subject.active) {
+        return polkit.Result.NOT_HANDLED;
+    }
+
+    // Roll back (pindu-os-rollback.service), and no other unit operation through systemd.
+    if (action.id === "org.freedesktop.systemd1.manage-units" &&
+        action.lookup("unit") === "pindu-os-rollback.service" &&
+        action.lookup("verb") === "start") {
+        return polkit.Result.YES;
+    }
+
+    // Save Wi-Fi networks as system connections, so they come up before login. Fedora's
+    // default is auth_admin_keep.
+    if (action.id === "org.freedesktop.NetworkManager.settings.modify.system") {
+        return polkit.Result.YES;
+    }
+
+    return polkit.Result.NOT_HANDLED;
+});

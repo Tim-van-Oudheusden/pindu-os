@@ -131,6 +131,15 @@ A variant is a build argument of the same `Containerfile`: `VARIANT`, `KERNEL_FL
 - On the device, `bootc-fetch-apply-updates.timer` runs 10 minutes after boot and every 4 hours. A drop-in replaces the
   stock `bootc upgrade --apply`, which reboots, with `bootc upgrade`: the update is downloaded and staged, and takes
   effect on the next boot. `bootc rollback` returns to the previous image.
+- The launcher's system panel shows the update state and rolls back without root:
+  - `pindu-os-update-status.service` writes `bootc status --format=json --format-version=1` to
+    `/run/pindu-os/update-status.json` (mode 0644) at boot, after each successful run of the update service and after
+    a rollback.
+  - `pindu-os-rollback.service` runs `bootc rollback`, then the status unit. It is never enabled; the launcher starts
+    it.
+  - [`50-pindu-os.rules`](../system_files/usr/share/polkit-1/rules.d/50-pindu-os.rules) lets `pindu`, in an active
+    local session, start that one unit and save system-wide NetworkManager connections without a password. Fedora's
+    defaults already allow the session to power off, reboot, suspend, control the network and scan for Wi-Fi.
 - CI signs each pushed digest with a cosign key. The image carries the public key
   (`/etc/pki/containers/pindu-os.pub`) and [`policy.json`](../system_files/etc/containers/policy.json), which makes
   the container tools refuse an image from our two repositories unless it has that signature. The installer sets the

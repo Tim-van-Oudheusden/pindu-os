@@ -32,3 +32,5 @@ fi
 systemctl enable greetd.service
 systemctl set-default graphical.target
 systemctl enable bootc-fetch-apply-updates.timer
+# /run/pindu-os/update-status.json at boot, for the launcher's system panel.
+systemctl enable pindu-os-update-status.service
