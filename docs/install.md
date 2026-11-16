@@ -69,6 +69,11 @@ start the new version.
 
 Every update keeps the previous version on disk.
 
+- **With a controller:** open Quick Access in the launcher and choose **System Update**. It shows the installed
+  version, an update that is ready, and **Roll Back to *version***. Confirm, and the console restarts into the previous
+  version. If an update was downloaded but not started yet, rolling back drops it. The console keeps looking for
+  updates, so it downloads the newer version again and starts it at the restart after that: rollback is a way out of a
+  bad update until a fixed one is published.
 - **With a keyboard:** restart the console and press the down arrow as soon as the boot menu shows. It lists two
   entries; the second one is the previous version. Select it and press Enter. This boots the previous version once.
 - **On the dev image:** make the previous version the default again with
@@ -77,8 +82,6 @@ Every update keeps the previous version on disk.
   sudo bootc rollback
   sudo systemctl reboot
   ```
-
-The production image has no shell, so it cannot run `bootc rollback` itself until the launcher has a system panel.
 
 ## Try it in a virtual machine
 

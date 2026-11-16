@@ -1,6 +1,6 @@
 # 0006: Updates
 
-Status: accepted (2026-11-15)
+Status: accepted (2026-11-15), amended 2026-11-16 (issue #17: the launcher's update control)
 
 ## Context
 
@@ -18,6 +18,11 @@ Devices update with `bootc upgrade` from GHCR, staged and applied on the next bo
 - `system_files/usr/lib/systemd/system/bootc-fetch-apply-updates.timer.d/10-pindu.conf` checks 10 minutes after boot
   and every 4 hours after that, with up to 10 minutes of random delay.
 - `bootc rollback` returns to the previous image.
+- The launcher's system panel (spec L-03) reads `/run/pindu-os/update-status.json`, which the root oneshot
+  `pindu-os-update-status.service` writes from `bootc status` at boot, after each successful update run and after a
+  rollback. It rolls back by starting `pindu-os-rollback.service` (`bootc rollback`, then the status unit), which the
+  polkit rule `system_files/usr/share/polkit-1/rules.d/50-pindu-os.rules` lets `pindu` start, and no other unit.
+  Nothing on the root side takes input from the launcher.
 
 Images are published in three kinds of tags:
 
@@ -45,5 +50,9 @@ installed system at `:stable` of its own image.
 - The build writes the system in one large layer that changes with every build, so an update downloads most of it;
   smaller downloads wait for chunked layers (spec OS-19).
 - Rollback keeps one previous image. `/var`, including the home directory, is not rolled back.
-- `just test-update` (`tests/vm/update.sh`) stages an update from a local registry, boots it and rolls back.
-- Revisit when the launcher gets an update control (L-03), or if a 4-hour check proves too frequent for GHCR.
+- `just test-update` (`tests/vm/update.sh`) stages an update from a local registry, boots it and rolls back the way the
+  launcher does.
+- A rollback discards an update that is staged at the time. After the reboot into the previous image, the update
+  service stages the newer image again, so the reboot after that returns to it: a rollback is a way out of a bad build
+  until a fixed one is published, not a pin.
+- Revisit if a 4-hour check proves too frequent for GHCR.

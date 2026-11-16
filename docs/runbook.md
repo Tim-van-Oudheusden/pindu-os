@@ -182,7 +182,8 @@ systemctl --user stop pindu-session.service
       after the next power cycle. `cat /usr/share/pindu-os/image-info.json` on the dev image shows the version.
 - [ ] Rollback works: the previous entry in the boot menu, or `sudo bootc rollback` on the dev image.
 
-Rolling back on the production image needs a keyboard for the boot menu until the launcher has a system panel.
+On the production image, the launcher's **System Update** section in Quick Access rolls back without a keyboard
+([install guide](install.md#rollback)).
 
 ## OGC kernel
 

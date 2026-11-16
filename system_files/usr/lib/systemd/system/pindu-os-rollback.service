@@ -1,0 +1,20 @@
+# Rolls back to the previous deployment, for the launcher's system panel. Never enabled: the
+# panel starts it as the pindu user, which /usr/share/polkit-1/rules.d/50-pindu-os.rules
+# allows, and the unit takes no input from the launcher.
+#
+# `bootc rollback` makes the rollback deployment the default for the next boot; nothing
+# changes until then. An update that is staged at that moment is discarded: afterwards
+# status.staged is null and status.rollbackQueued is true (tests/vm/guest/update.sh checks
+# this). Starting the unit again while a rollback is queued reverts the rollback, but the
+# discarded update stays gone until bootc-fetch-apply-updates.service stages it again.
+# After the reboot into the previous image, that service does stage the newer image again,
+# so the next reboot after that returns to it.
+
+[Unit]
+Description=Roll back to the previous Pindu OS deployment
+Documentation=https://github.com/Tim-van-Oudheusden/pindu-launcher/blob/main/docs/system-panel.md#pindu-os-side
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/bootc rollback
+ExecStartPost=/usr/bin/systemctl start pindu-os-update-status.service

@@ -71,6 +71,31 @@ keyring_opens_without_prompt() {
 check "the default keyring opens without a password prompt" keyring_opens_without_prompt
 check "one gnome-keyring-daemon is running" test "$(pgrep --uid pindu --count --exact gnome-keyring-d)" = 1
 
+# The launcher's system panel (issue #17): the update status it reads, and what polkit lets
+# it do without a password. The session has no polkit agent, so anything but a plain yes
+# fails there. The launcher runs in pindu's user manager, so its process is the subject.
+wait_for 60 update_status '.status.booted.image.imageDigest'
+check "the update status names the booted image, readable by pindu" \
+    update_status '.status.booted.image.imageDigest | startswith("sha256:")'
+check "the update status file has mode 0644" test "$(stat -c %a /run/pindu-os/update-status.json)" = 644
+launcher=$(pgrep --uid pindu --exact --newest pindu-launcher)
+for action in org.freedesktop.login1.power-off org.freedesktop.login1.reboot org.freedesktop.login1.suspend \
+    org.freedesktop.NetworkManager.network-control org.freedesktop.NetworkManager.wifi.scan \
+    org.freedesktop.NetworkManager.settings.modify.system; do
+    check "polkit allows the launcher ${action}" pkcheck --action-id "${action}" --process "${launcher}"
+done
+check "polkit allows the launcher to start pindu-os-rollback.service" \
+    pkcheck --action-id org.freedesktop.systemd1.manage-units --process "${launcher}" \
+    --detail unit pindu-os-rollback.service --detail verb start
+check_not "polkit refuses the launcher any other verb on pindu-os-rollback.service" \
+    pkcheck --action-id org.freedesktop.systemd1.manage-units --process "${launcher}" \
+    --detail unit pindu-os-rollback.service --detail verb stop
+check_not "polkit refuses the launcher to start another unit" \
+    pkcheck --action-id org.freedesktop.systemd1.manage-units --process "${launcher}" \
+    --detail unit bootc-fetch-apply-updates.service --detail verb start
+check_not "systemd refuses pindu to start another system unit" \
+    start_unit_as_pindu pindu-os-update-status.service
+
 # An installed system (tests/vm/install.sh) must update from the registry, signatures enforced.
 if [[ -n ${PINDU_TEST_EXPECT_IMAGE:-} ]]; then
     check "updates come from ${PINDU_TEST_EXPECT_IMAGE}" \

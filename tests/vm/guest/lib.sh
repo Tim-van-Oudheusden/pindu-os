@@ -24,6 +24,18 @@ check() {
     fi
 }
 
+# check_not DESCRIPTION COMMAND...: the command must fail.
+check_not() {
+    local description=$1
+    shift
+    if "$@" >/dev/null 2>&1; then
+        say "FAIL  ${description}"
+        failures=$((failures + 1))
+    else
+        say "ok    ${description}"
+    fi
+}
+
 # wait_for SECONDS COMMAND...: retry the command once a second until it succeeds.
 wait_for() {
     local deadline=$((SECONDS + $1))
@@ -38,6 +50,20 @@ wait_for() {
 as_pindu() {
     runuser -u pindu -- env XDG_RUNTIME_DIR=/run/user/1000 \
         DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus "$@"
+}
+
+# start_unit_as_pindu UNIT: ask the system manager to start UNIT the way the launcher's system
+# panel does: as pindu, from a process in pindu's user manager, where the launcher runs.
+# Returns once the job is queued.
+start_unit_as_pindu() {
+    as_pindu systemd-run --user --quiet --wait --pipe -- busctl call org.freedesktop.systemd1 \
+        /org/freedesktop/systemd1 org.freedesktop.systemd1.Manager StartUnit ss "$1" replace
+}
+
+# update_status FILTER: run the jq FILTER, as pindu, on the update status the launcher reads;
+# fails if the file is missing or the result is false or null.
+update_status() {
+    as_pindu jq --exit-status "$1" /run/pindu-os/update-status.json
 }
 
 # result: print the verdict the host waits for, with logs when something failed.

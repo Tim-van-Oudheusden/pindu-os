@@ -1,0 +1,21 @@
+# Publishes bootc's status for the launcher's system panel. `bootc status` needs root
+# (bootc-dev/bootc#409); this unit writes it to /run/pindu-os/update-status.json, which
+# anyone may read. It runs at boot, after every successful run of
+# bootc-fetch-apply-updates.service (10-stage-only.conf) and after pindu-os-rollback.service.
+#
+# The file is written to a temporary name and renamed, so a reader never sees half of it.
+
+[Unit]
+Description=Publish the update status for the launcher
+Documentation=https://github.com/Tim-van-Oudheusden/pindu-launcher/blob/main/docs/system-panel.md#pindu-os-side
+
+[Service]
+Type=oneshot
+RuntimeDirectory=pindu-os
+RuntimeDirectoryMode=0755
+RuntimeDirectoryPreserve=yes
+UMask=0022
+ExecStart=/usr/bin/sh -c 'bootc status --format=json --format-version=1 >/run/pindu-os/update-status.json.new && mv -f /run/pindu-os/update-status.json.new /run/pindu-os/update-status.json'
+
+[Install]
+WantedBy=multi-user.target
