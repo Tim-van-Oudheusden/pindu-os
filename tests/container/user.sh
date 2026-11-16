@@ -19,7 +19,15 @@ config=$(grep -v '^#' /etc/greetd/config.toml | tr -d ' \n')
 check "greetd uses VT 1" grep -q '\[terminal\]vt=1' <<<"${config}"
 check "greetd logs pindu in at boot" \
     grep -q '\[initial_session\]command="pindu-session"user="pindu"' <<<"${config}"
-check "greetd starts the session again when it ends" \
-    grep -q '\[default_session\]command="pindu-session"user="pindu"' <<<"${config}"
+
+# The session comes back through a restart of greetd, which runs initial_session again only
+# when its runfile is gone (issue #18); tests/vm/boot.sh ends a session and watches it return.
+runfile=$(sed -n 's/^runfile = "\(.*\)"$/\1/p' /etc/greetd/config.toml)
+check "greetd names its runfile" test -n "${runfile}"
+check "every start of greetd deletes the runfile" \
+    grep -qx "ExecStartPre=/usr/bin/rm -f ${runfile}" <(systemctl cat greetd.service)
+check "greetd restarts when it exits" grep -qx 'Restart=always' <(systemctl cat greetd.service)
+check "default_session ends greetd instead of running the session as a greeter" \
+    grep -q '\[default_session\]command="/usr/bin/true"user="greetd"' <<<"${config}"
 
 finish

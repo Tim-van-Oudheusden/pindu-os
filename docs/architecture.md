@@ -81,7 +81,9 @@ real root is mounted. With the base image's initramfs the machine would be calle
 1. **systemd** boots to `graphical.target`. The kernel arguments in
    [`kargs.d/10-pindu.toml`](../system_files/usr/lib/bootc/kargs.d/10-pindu.toml) keep the boot quiet.
 2. **greetd** runs on VT 1. [`/etc/greetd/config.toml`](../system_files/etc/greetd/config.toml) logs the `pindu` user
-   in without a greeter (`initial_session`), and starts the session again whenever it ends (`default_session`).
+   in without a greeter (`initial_session`). When the session ends, `default_session` exits at once, greetd exits with
+   it, and systemd restarts greetd; a drop-in deletes greetd's runfile before every start, so the restarted greetd logs
+   `pindu` in again.
 3. **`/usr/bin/pindu-session`** is the login session. It sets `XDG_CURRENT_DESKTOP=gamescope`, hands the session
    environment to the systemd user manager and D-Bus, runs `systemctl --user start --wait pindu-session.service`, and
    takes the display variables back out when the unit ends.
@@ -92,8 +94,8 @@ real root is mounted. With the base image's initramfs the machine would be calle
      lines and upscales.
    - A gamescope run shorter than 10 seconds counts as a failed start. After two in a row it runs
      `cage -- pindu-session client` instead. This is what happens in a VM and on a GPU without usable Vulkan.
-   - A longer run that ends is the end of the session: the unit stops, the login script returns, and greetd starts a
-     new session.
+   - A longer run that ends is the end of the session: the unit stops, the login script returns, and greetd restarts
+     and logs `pindu` in again.
 5. **`pindu-session client`** runs inside the compositor. It publishes `DISPLAY` or `WAYLAND_DISPLAY` to the user
    manager and D-Bus, tells systemd the unit is ready, and becomes `pindu-launcher --fullscreen`. Under gamescope it
    sets `GDK_BACKEND=x11`, so the launcher and the games it starts are X11 clients on gamescope's Xwayland.
