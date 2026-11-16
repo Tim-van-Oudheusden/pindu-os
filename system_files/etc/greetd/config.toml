@@ -1,15 +1,30 @@
 # greetd logs the pindu user in on VT 1 and starts the Pindu session; there is no greeter.
+#
+# Only initial_session gives pindu a real login: greetd runs default_session as a greeter,
+# with logind class "greeter" and the greeter's SELinux domain (xdm_t), which may not start
+# pindu-session.service (issue #18). So the session comes back by a restart of greetd instead:
+#
+#   1. The session ends and greetd runs default_session, which exits at once.
+#   2. greetd exits, because its greeter exited without creating a session.
+#   3. systemd restarts greetd.service (Restart=always). The drop-in
+#      /usr/lib/systemd/system/greetd.service.d/10-pindu.conf deletes the runfile first, so
+#      greetd takes this for its first start and runs initial_session again.
+#
+# pindu-session sleeps before it returns from a session shorter than 10 seconds, which keeps
+# the restarts within greetd.service's start limit (5 in 30 seconds).
+
+[general]
+runfile = "/run/greetd.run"
 
 [terminal]
 vt = 1
 
-# First login after boot.
+# The autologin.
 [initial_session]
 command = "pindu-session"
 user = "pindu"
 
-# What greetd runs whenever no session is running. A greeter would be useless here, because
-# the account has no password, so this is the session again: it comes back after it ends.
+# What greetd runs whenever no session is running. It ends greetd, see above.
 [default_session]
-command = "pindu-session"
-user = "pindu"
+command = "/usr/bin/true"
+user = "greetd"

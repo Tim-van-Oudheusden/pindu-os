@@ -6,9 +6,16 @@ source "${CREDENTIALS_DIRECTORY}/pindu.test.lib"
 
 login_deadline=${PINDU_TEST_LOGIN_DEADLINE:-60}
 
+# The ID of pindu's logind session on seat0. Its class must be "user": greetd runs a greeter's
+# command as class "greeter", in an SELinux domain that may not start the session (issue #18).
+pindu_session() {
+    loginctl list-sessions --json=short |
+        jq -r 'first(.[] | select(.user == "pindu" and .seat == "seat0" and .class == "user") | .session) // empty'
+}
+
 # shellcheck disable=SC2329  # called through wait_for
 pindu_on_seat0() {
-    loginctl list-sessions --json=short | jq --exit-status 'any(.[]; .user == "pindu" and .seat == "seat0")'
+    [[ -n $(pindu_session) ]]
 }
 
 # The 60 seconds count from the start of the kernel, which is what /proc/uptime measures.
@@ -96,5 +103,22 @@ if [[ -n ${PINDU_TEST_EXPECT_IMAGE:-} ]]; then
     check "updates must pass the signature policy" \
         test "$(bootc status --json | jq -r '.spec.image.signature')" = containerPolicy
 fi
+
+# A session that ends comes back by itself (decision 0004). Kill the launcher, as a crash
+# would: the compositor exits, the unit fails, and greetd must log pindu in again in a new
+# session of class "user" that starts the unit and the launcher once more.
+first_session=$(pindu_session)
+first_launcher=$(pgrep --uid pindu --exact --newest pindu-launcher || true)
+pkill --signal KILL --uid pindu --exact pindu-launcher
+# shellcheck disable=SC2329  # called through check and wait_for
+session_came_back() {
+    local session launcher
+    session=$(pindu_session)
+    launcher=$(pgrep --uid pindu --exact --newest pindu-launcher) &&
+        [[ -n ${session} && ${session} != "${first_session}" && ${launcher} != "${first_launcher}" ]] &&
+        unit_active pindu-session.service
+}
+wait_for 120 session_came_back
+check "after the launcher is killed, pindu gets a new session with the unit and the launcher" session_came_back
 
 result
