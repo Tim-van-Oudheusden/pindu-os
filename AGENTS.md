@@ -9,7 +9,7 @@ This file is authoritative. `CLAUDE.md` is a short companion that defers to it.
 
 ## Spec and layout
 
-- `pindu-os bootc OS spec and implementation plan.md` is the spec. Read the section an issue links to before you start.
+- `docs/spec.md` is the spec and implementation plan. Read the section an issue links to before you start.
   `docs/architecture.md` describes what is built, and `docs/decisions/` holds one record per design decision.
 - If an issue and the spec disagree, the issue wins; say so in the PR.
 - `Containerfile` has three stages: `ctx` (scripts and files), `launcher` (the verified RPM), `image`.

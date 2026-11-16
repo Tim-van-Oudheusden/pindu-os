@@ -129,7 +129,7 @@ records why it is built this way.
 | Know what is in the image and how it boots | [Architecture](docs/architecture.md) |
 | Know why it is built this way | [Decisions](docs/decisions/README.md), one record per design decision |
 | Release, rotate the signing key or test on hardware | [Runbook](docs/runbook.md) |
-| Read the original plan | [Spec and implementation plan](pindu-os%20bootc%20OS%20spec%20and%20implementation%20plan.md) |
+| Read the original plan | [Spec and implementation plan](docs/spec.md) |
 | Report a vulnerability, privately | [`SECURITY.md`](SECURITY.md) |
 | Use the logo or the banner | [`docs/brand/`](docs/brand/README.md) |
 
@@ -165,7 +165,7 @@ just build-iso && just test-install
    ([#7](https://github.com/Tim-van-Oudheusden/pindu-os/issues/7)).
 3. **Ready for games.** Game stores, a system panel in the launcher for power, network, Bluetooth and updates, a
    boot splash, and variants for handhelds and NVIDIA graphics. The
-   [spec](pindu-os%20bootc%20OS%20spec%20and%20implementation%20plan.md#phase-3-ready-for-games) lists the work
+   [spec](docs/spec.md#phase-3-ready-for-games) lists the work
    packages.
 
 ## Contributing
