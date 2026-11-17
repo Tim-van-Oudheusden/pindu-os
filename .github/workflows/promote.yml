@@ -2,7 +2,9 @@ name: Promote
 
 # Retags a tested :testing build as :stable. Nothing is rebuilt: the same digest, with the
 # signature it already has, gets a second tag. A digest without a valid signature from our
-# key is refused. The "promote" environment requires a reviewer (docs/runbook.md).
+# key is refused, and so is a new launcher whose hardware check has not passed
+# (.github/scripts/launcher-gate.sh). The "promote" environment requires a reviewer
+# (docs/runbook.md).
 
 on:
   workflow_dispatch:
@@ -40,6 +42,8 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          # The launcher gate reads image.env at the commits the two images were built from.
+          fetch-depth: 0
 
       - name: Install cosign
         uses: sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532 # v4.1.3
@@ -56,8 +60,9 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Verify the signature and retag
+      - name: Verify the signature and the launcher hardware check, then retag
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }} # read the launcher's public release issues
           REPOSITORY_OWNER: ${{ github.repository_owner }}
           SOURCE: ${{ inputs.source }}
           VARIANT: ${{ matrix.variant }}
@@ -77,6 +82,9 @@ jobs:
           # The signature is in the classic format; without the flag cosign 3 looks only at the
           # image's attestations, finds GitHub's keyless ones and fails.
           cosign verify --new-bundle-format=false --key cosign.pub "${image}@${digest}" >/dev/null
+          # A new launcher reaches stable only after its hardware check passed (docs/runbook.md,
+          # "Launcher hardware check").
+          .github/scripts/launcher-gate.sh "${image}@${digest}" "${image}:stable"
 
           skopeo copy --all --preserve-digests "docker://${image}@${digest}" "docker://${image}:stable"
           promoted=$(skopeo inspect --no-tags --format '{{.Digest}}' "docker://${image}:stable")
