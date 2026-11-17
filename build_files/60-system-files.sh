@@ -34,3 +34,7 @@ systemctl set-default graphical.target
 systemctl enable bootc-fetch-apply-updates.timer
 # /run/pindu-os/update-status.json at boot, for the launcher's system panel.
 systemctl enable pindu-os-update-status.service
+# Flatpak: apps update on a timer, and Fedora's remote stays out of the system installation;
+# 40-pindu-os.preset keeps that unit off when systemd applies the presets on first boot.
+systemctl enable pindu-os-flatpak-update.timer
+systemctl disable flatpak-add-fedora-repos.service

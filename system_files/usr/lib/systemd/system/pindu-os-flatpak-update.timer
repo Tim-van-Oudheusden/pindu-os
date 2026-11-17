@@ -1,0 +1,14 @@
+# Looks for Flatpak updates half an hour after boot, once the session and the OS update check
+# (10 minutes) are out of the way, and twice a day while the console stays on.
+
+[Unit]
+Description=Update Flatpak apps regularly
+Documentation=https://github.com/Tim-van-Oudheusden/pindu-os/blob/main/docs/decisions/0012-game-sources.md
+
+[Timer]
+OnBootSec=30min
+OnUnitInactiveSec=12h
+RandomizedDelaySec=10min
+
+[Install]
+WantedBy=timers.target

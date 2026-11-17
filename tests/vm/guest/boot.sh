@@ -96,6 +96,26 @@ check_not "polkit refuses the launcher to start another unit" \
 check_not "systemd refuses pindu to start another system unit" \
     start_unit_as_pindu pindu-os-update-status.service
 
+# The launcher's "add a store" flow (issue #29, pindu-launcher#378): from its process in
+# pindu's user manager it lists the system installation's remotes, then installs from flathub
+# without a password. pkcheck asks polkit what flatpak's system helper asks on Deploy.
+check "pindu sees flathub in the system installation" \
+    test "$(as_pindu systemd-run --user --quiet --wait --pipe -- flatpak remotes --system --columns=name)" = flathub
+steam=app/com.valvesoftware.Steam/x86_64/stable
+for action in app-install runtime-install app-update runtime-update; do
+    check "polkit allows the launcher ${action} from flathub" \
+        pkcheck --action-id "org.freedesktop.Flatpak.${action}" --process "${launcher}" \
+        --detail origin flathub --detail ref "${steam}"
+done
+check_not "polkit refuses the launcher app-install from another remote" \
+    pkcheck --action-id org.freedesktop.Flatpak.app-install --process "${launcher}" \
+    --detail origin fedora --detail ref "${steam}"
+for action in app-uninstall runtime-uninstall install-bundle configure-remote configure; do
+    check_not "polkit refuses the launcher org.freedesktop.Flatpak.${action}" \
+        pkcheck --action-id "org.freedesktop.Flatpak.${action}" --process "${launcher}" \
+        --detail origin flathub --detail remote flathub --detail ref "${steam}"
+done
+
 # An installed system (tests/vm/install.sh) must update from the registry, signatures enforced.
 if [[ -n ${PINDU_TEST_EXPECT_IMAGE:-} ]]; then
     check "updates come from ${PINDU_TEST_EXPECT_IMAGE}" \
