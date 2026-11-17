@@ -33,6 +33,9 @@ jobs:
       - name: Lint shell, Containerfile, Justfile and workflows
         run: just lint
 
+      - name: Test the workflow scripts
+        run: just test-ci
+
   build:
     name: Build and test (${{ matrix.variant }})
     # Not ubuntu-26.04: bootc-image-builder cannot mount the container storage on its 7.0
