@@ -1,25 +1,160 @@
 # bootc-image-builder configuration for the installer ISO.
 #
-# WARNING: the installer is unattended. It erases every disk of the machine it boots on and
-# installs to it without asking. docs/install.md says so before the download link.
+# The installer erases one disk, and only after it is told which. Its %pre step counts the
+# disks of the machine, leaving out the medium it booted from and zram, loop and empty
+# devices:
+#
+# - none, or more than one: it says so on screen and turns the PC off when Enter is pressed.
+#   Nothing is written.
+# - exactly one: it shows the disk (model, size, partitions) and asks the user to type
+#   "erase". Any other answer turns the PC off without writing anything.
+#
+# Only a confirmed disk ends up in /tmp/pindu-disk.ks, the one place that clears and
+# partitions a disk; `ignoredisk --only-use` hides every other disk from Anaconda.
+#
+# An unattended installation confirms the disk with the systemd credential
+# pindu.install.confirm set to the disk's kernel name (for example sda or nvme0n1): on the
+# kernel command line as systemd.set_credential=pindu.install.confirm:sda, or in a VM over
+# SMBIOS, as tests/vm/install.sh does. A credential that names another disk turns the PC off.
+# The installer prints its decision as "pindu-install: ..." lines on the first serial port.
 #
 # bootc-image-builder adds the command that installs the image embedded in the ISO. The
 # %post step then points the installed system at the registry, so updates come from the
 # stable channel of the same image (pindu-os or pindu-os-dev, read from its os-release) and
 # must carry our signature.
+#
+# `just lint` runs shellcheck on the %pre script.
 [customizations.installer.kickstart]
-contents = """
+contents = '''
 text --non-interactive
-zerombr
-clearpart --all --initlabel --disklabel=gpt
-autopart --type=btrfs --noswap
 reboot --eject
+%include /tmp/pindu-disk.ks
+
+%pre --interpreter=/usr/bin/bash --erroronfail
+set -euo pipefail
+
+credential=/run/credentials/@system/pindu.install.confirm
+
+# report MESSAGE: a "pindu-install: MESSAGE" line on the first serial port, if there is one.
+report() {
+    if [[ -c /dev/ttyS0 ]]; then
+        { echo "pindu-install: $*" >/dev/ttyS0; } 2>/dev/null || true
+    fi
+}
+
+power_off() {
+    echo
+    echo "Turning the PC off. Nothing was changed."
+    systemctl poweroff
+    sleep infinity
+}
+
+# refuse REASON: wait for Enter, then turn the PC off.
+refuse() {
+    report "refused: $1"
+    echo
+    echo "Press Enter to turn the PC off. Nothing was changed."
+    read -r _ || true
+    power_off
+}
+
+# The disks the installer runs from: the one that holds its files, and the one that carries
+# the label of inst.stage2=hd:LABEL=... on the kernel command line.
+media=()
+add_medium() {
+    local name type
+    while read -r name type; do
+        if [[ ${type} == disk ]]; then
+            media+=("${name}")
+        fi
+    done < <(lsblk --noheadings --raw --inverse --output NAME,TYPE "$1" 2>/dev/null || true)
+}
+if source=$(findmnt --noheadings --output SOURCE /run/install/repo); then
+    add_medium "${source}"
+fi
+label=$(sed -n 's/.*inst\.stage2=hd:LABEL=\([^ :]*\).*/\1/p' /proc/cmdline)
+if [[ -n ${label} ]] && device=$(blkid --label "${label}"); then
+    add_medium "${device}"
+fi
+
+# Every other writable disk with a size counts, removable or not.
+disks=()
+while read -r name type size ro; do
+    [[ ${type} == disk && ${size} -gt 0 && ${ro} == 0 ]] || continue
+    case ${name} in
+        zram* | loop* | ram*) continue ;;
+    esac
+    for medium in "${media[@]}"; do
+        [[ ${name} == "${medium}" ]] && continue 2
+    done
+    disks+=("${name}")
+done < <(lsblk --nodeps --noheadings --raw --bytes --output NAME,TYPE,SIZE,RO)
+
+exec </dev/tty6 >/dev/tty6
+chvt 6
+trap 'chvt 1' EXIT
+printf '\033[2J\033[H'
+echo "Pindu OS installer"
+echo
+
+if ((${#disks[@]} == 0)); then
+    echo "This PC has no disk to install Pindu OS on."
+    refuse "no disk"
+fi
+if ((${#disks[@]} > 1)); then
+    echo "This PC has ${#disks[@]} disks. The installer only installs on a PC with exactly one disk,"
+    echo "so that it cannot erase the wrong one:"
+    echo
+    lsblk --nodeps --output NAME,MODEL,SIZE,TRAN "${disks[@]/#//dev/}"
+    echo
+    echo "Turn the PC off, disconnect every disk except the one for Pindu OS, and start the"
+    echo "installer again."
+    refuse "${#disks[@]} disks (${disks[*]})"
+fi
+
+disk=${disks[0]}
+echo "Pindu OS will be installed on this disk. Everything on it will be erased:"
+echo
+lsblk --nodeps --output NAME,MODEL,SIZE,TRAN "/dev/${disk}"
+echo
+echo "Partitions on it now:"
+lsblk --output NAME,SIZE,TYPE,FSTYPE,LABEL "/dev/${disk}"
+echo
+
+if [[ -e ${credential} ]]; then
+    confirm=$(tr -d '[:space:]' <"${credential}")
+    if [[ ${confirm} != "${disk}" ]]; then
+        echo "The credential pindu.install.confirm names \"${confirm}\", not ${disk}."
+        report "declined: the credential names ${confirm}, not ${disk}"
+        power_off
+    fi
+    echo "Confirmed by the credential pindu.install.confirm."
+else
+    report "asking about ${disk}"
+    echo "Type erase and press Enter to erase it and install Pindu OS."
+    echo "Anything else turns the PC off without changing it."
+    printf '> '
+    read -r answer || answer=
+    if [[ ${answer,,} != erase ]]; then
+        report "declined"
+        power_off
+    fi
+fi
+report "confirmed ${disk}"
+
+cat >/tmp/pindu-disk.ks <<EOF
+ignoredisk --only-use=${disk}
+zerombr
+clearpart --all --initlabel --disklabel=gpt --drives=${disk}
+autopart --type=btrfs --noswap
+EOF
+%end
 
 %post --erroronfail
 . /usr/lib/os-release
 bootc switch --mutate-in-place --enforce-container-sigpolicy --transport registry "ghcr.io/tim-van-oudheusden/${IMAGE_ID}:stable"
 %end
-"""
+'''
 
 # Only the installer parts an unattended installation uses.
 [customizations.installer.modules]

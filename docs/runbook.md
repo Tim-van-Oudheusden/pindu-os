@@ -151,7 +151,7 @@ Before the first promotion there is no ISO to download. Build one locally and wr
 just build dev && just build-iso dev          # output/dev/bootiso/install.iso
 ```
 
-The installer erases the PC's disks.
+The installer erases the PC's disk after you type `erase`, and refuses a PC with more than one disk.
 
 ### Gate v0: the dev image on a PC with an AMD or Intel GPU (person)
 

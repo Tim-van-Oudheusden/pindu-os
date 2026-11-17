@@ -32,8 +32,9 @@ Images are published in three kinds of tags:
 - `:stable`: `.github/workflows/promote.yml`, behind an environment with a required reviewer, verifies the signature of
   a `:testing` or version-tagged digest and retags it for both variants. Nothing is rebuilt.
 
-The installer ISO from `disk_config/iso.toml` is unattended and erases every disk of the machine it boots on, as
-bootc-image-builder's default installer does. Its `%post` runs `bootc switch --enforce-container-sigpolicy` to point the
+The installer ISO from `disk_config/iso.toml` installs only on a machine with exactly one disk, and erases it only after
+the user types `erase` or the credential `pindu.install.confirm` names it (issue #28; bootc-image-builder's default
+installer erases every disk without asking). Its `%post` runs `bootc switch --enforce-container-sigpolicy` to point the
 installed system at `:stable` of its own image.
 
 ## Alternatives considered

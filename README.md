@@ -74,18 +74,19 @@ contents (an SBOM). The install guide has the two commands that
 ## Install
 
 > [!WARNING]
-> **The installer erases the PC.** It is unattended: once it boots, it wipes every disk in the machine and installs
-> without asking a single question. Unplug any disk you want to keep before you start.
+> **The installer erases the PC's disk.** It installs only on a PC with exactly one disk (the USB stick does not count),
+> shows that disk and erases it once you type `erase`. Disconnect any other disk before you start.
 
 You need a 64-bit Intel or AMD PC with UEFI firmware, an AMD or Intel GPU, a network cable, a USB stick of 8 GB or
-more, and a controller. Until the first `:stable` release there is no installer to download; `just build-iso` builds
-one from this repository.
+more, a keyboard for the installer, and a controller. Until the first `:stable` release there is no installer to
+download; `just build-iso` builds one from this repository.
 
 1. Download the installer ISO from the latest run of the
    [Disk images](https://github.com/Tim-van-Oudheusden/pindu-os/actions/workflows/disk.yml) workflow and check it
    against its `SHA256SUMS`.
 2. Write it to the USB stick.
-3. Start the PC from the stick and leave it alone for five to ten minutes.
+3. Start the PC from the stick, check the disk it shows, type `erase` and press Enter. It installs in five to ten
+   minutes.
 4. Remove the stick when the PC restarts. It boots straight into the launcher.
 
 The [install guide](docs/install.md) has every step in full, and covers updates, rollback, the dev image and

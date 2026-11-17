@@ -115,6 +115,10 @@ lint:
     mapfile -t scripts < <(git ls-files --cached --others --exclude-standard -- '*.sh' system_files/usr/bin)
     run "${SHELLCHECK_IMAGE}" --external-sources "${scripts[@]}"
 
+    echo "== shellcheck: the %pre script of disk_config/iso.toml"
+    awk '/^%end/ { pre = 0 } pre; /^%pre/ { pre = 1 }' disk_config/iso.toml |
+        run --interactive "${SHELLCHECK_IMAGE}" --shell=bash -
+
     echo "== hadolint"
     run "${HADOLINT_IMAGE}" hadolint Containerfile
 
@@ -219,7 +223,7 @@ test-update variant="prod":
     tests/vm/update.sh "localhost/$(just image-name {{ variant }}):{{ tag }}" \
         "output/{{ variant }}/qcow2/disk.qcow2" "output/{{ variant }}/test-update"
 
-# VM test: install from the ISO unattended, then run the boot assertions on the installed disk
+# VM test: the ISO refuses two disks and an unconfirmed one, installs a confirmed one, which then passes the boot assertions
 [group('vm')]
 test-install variant="prod":
     tests/vm/install.sh "output/{{ variant }}/bootiso/install.iso" "output/{{ variant }}/test-install" \

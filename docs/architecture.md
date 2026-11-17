@@ -180,7 +180,9 @@ signature policy and the agent instructions.
     screenshot that is not blank. With `--ssh` (dev image): SSH with an injected key, and sudo.
   - `update.sh`: four boots. The guest switches to the image as served by a local registry, the host pushes a newer
     one, the update service stages it without a reboot, the next boot runs it, and `bootc rollback` returns.
-  - `install.sh`: installs from the ISO unattended onto an empty disk, then runs `boot.sh` on the installed disk.
+  - `install.sh`: three installer runs. With two empty disks the installer must refuse and write nothing; with one disk
+    and the answer "no" it must power off and write nothing; with one disk confirmed by the credential
+    `pindu.install.confirm` it installs, and `boot.sh` then runs on the installed disk.
 
 ## Known limits
 
