@@ -7,7 +7,7 @@ to have seen any other document.
 
 - A 64-bit Intel or AMD PC with UEFI firmware. Secure Boot can stay on.
 - An AMD or Intel GPU. gamescope needs Vulkan; NVIDIA cards are not supported yet.
-- A wired network connection. Wi-Fi has no setup screen yet (see [Wi-Fi](#wi-fi)).
+- A network cable or Wi-Fi. Wi-Fi is joined from the launcher after the install (see [Wi-Fi](#wi-fi)).
 - A USB stick of 8 GB or more, a keyboard for the installer, and a controller.
 - A PC with exactly one disk, and nothing on it that you want to keep.
 
@@ -48,7 +48,7 @@ Replace `/dev/sdX` with the stick. `dd` overwrites whatever you point it at.
 
 ## 3. Install
 
-1. Plug the network cable, a keyboard and the USB stick into the PC.
+1. Plug the USB stick, a keyboard, and the network cable if you use one, into the PC.
 2. Start the PC and open its boot menu (often F12, F8 or Esc) and choose the USB stick.
 3. The installer starts by itself and counts the disks of the PC. The USB stick it runs from does not count; every
    other disk does, including a second USB stick or a memory card.
@@ -60,8 +60,8 @@ Replace `/dev/sdX` with the stick. `dd` overwrites whatever you point it at.
 4. After `erase` it installs and restarts the PC by itself. It takes five to ten minutes.
 5. Remove the USB stick when the PC restarts.
 
-The PC then boots straight into the launcher: there is no login and no password. Connect a controller with a cable, or
-pair it later from the dev image (Bluetooth has no setup screen yet).
+The PC then boots straight into the launcher: there is no login and no password. Connect a controller with a cable,
+then pair wireless controllers and headsets with it in Quick Access (right stick click), **Bluetooth**.
 
 ### A PC with several disks
 
@@ -84,6 +84,13 @@ systemd.set_credential=pindu.install.confirm:nvme0n1
 then press Ctrl+X. A VM can pass the same credential over SMBIOS (`tests/vm/install.sh` does). The installer still
 shows the disk, then installs without asking. It still refuses a PC with more than one disk, and a credential that
 names a different disk turns the PC off without changes. Nothing sets this credential by default.
+
+## Wi-Fi
+
+Open Quick Access (right stick click) and choose **Network**. It lists the networks in range; choose one and type its
+passphrase on the on-screen keyboard. The console saves it and joins it again after every restart. Enterprise
+(802.1X) and hidden networks are not offered there: on the dev image, run `nmtui` in the shell on VT 2 and choose
+"Activate a connection".
 
 ## Updates
 
@@ -142,11 +149,6 @@ from the `pindu-os-dev-iso` artifact (run the Disk images workflow with variant 
 
   Then, from another machine: `ssh pindu@<address>`.
 
-### Wi-Fi
-
-On the dev image, run `nmtui` in the shell on VT 2 and choose "Activate a connection". The production image needs a
-network cable until the launcher has a network panel.
-
 ### Looking at a system
 
 ```sh
@@ -185,5 +187,5 @@ the one the devices check; without it cosign reports "expected key signature, no
 | A black screen with a cursor, or the launcher appears only after about 20 seconds | gamescope could not start on this GPU and the fallback took over. On the dev image, `journalctl --user -u pindu-session` says why; `vulkaninfo --summary` shows whether the GPU has a Vulkan driver. |
 | The installer says the PC has no disk, or more than one | It counts every disk except the USB stick it runs from. Disconnect the others (see [A PC with several disks](#a-pc-with-several-disks)); if it finds none, check that the disk shows up in the firmware settings. |
 | The installer stops with an error | The download of the image inside the ISO is damaged. Check `SHA256SUMS` and write the stick again. |
-| No update arrives | The console needs a network cable and must stay on for ten minutes. On the dev image, `sudo bootc upgrade` shows the error. |
+| No update arrives | The console needs a network connection (Quick Access, **Network**) and must stay on for ten minutes. On the dev image, `sudo bootc upgrade` shows the error. |
 | The console does not start after an update | Choose the previous version in the boot menu (see [Rollback](#rollback)), then report it in the [issue tracker](https://github.com/Tim-van-Oudheusden/pindu-os/issues). |

@@ -157,10 +157,10 @@ write token.
 
 | Workflow | Trigger | Does | Token |
 | --- | --- | --- | --- |
-| [`pr.yml`](../.github/workflows/pr.yml) | `pull_request` | `just lint`; for both variants: build, container tests, qcow2, VM boot test, screenshot artifact | `contents: read`, no secrets, no registry login |
+| [`pr.yml`](../.github/workflows/pr.yml) | `pull_request` | `just lint` and `just test-ci`; for both variants: build, container tests, qcow2, VM boot test, screenshot artifact | `contents: read`, no secrets, no registry login |
 | [`build.yml`](../.github/workflows/build.yml) | Push to `main`, daily, manual | Verifies the pins, builds both variants, pushes `:testing` and the version tag, signs, attests provenance and an SBOM, boots the published digest in a VM | `packages: write`, `id-token: write`, `attestations: write`; the key is in the `signing` environment |
 | [`disk.yml`](../.github/workflows/disk.yml) | Manual, and after a promotion | Verifies the signature of a tag or digest, builds qcow2, raw and ISO with bootc-image-builder, tests the qcow2 and the ISO in QEMU | `packages: read` |
-| [`promote.yml`](../.github/workflows/promote.yml) | Manual, behind the `promote` environment | Verifies the signature of a `:testing` (or version) tag and retags the same digest `:stable`, for both variants | `packages: write` |
+| [`promote.yml`](../.github/workflows/promote.yml) | Manual, behind the `promote` environment | Verifies the signature of a `:testing` (or version) tag, refuses a new launcher without a passed hardware check ([decision 0012](decisions/0012-launcher-releases.md)) and retags the same digest `:stable`, for both variants | `packages: write` |
 
 Actions are pinned by commit SHA. `.github/CODEOWNERS` requests the maintainer's review on `.github/`, `image.env`, the
 signature policy and the agent instructions.
@@ -171,6 +171,8 @@ signature policy and the agent instructions.
   package lists, the launcher's version and libraries, the session script against stub compositors (fallback after two
   failed gamescope starts, none when gamescope stays up, the 1080-line render size), the user and autologin
   configuration, the variant's access rules, the signature policy and the update units.
+- **Workflow script tests** ([`tests/ci/`](../tests/ci)) run on the host with `just test-ci`: the promote gate
+  against a stub registry and stub launcher issues, with `image.env` from a scratch git repository.
 - **VM tests** ([`tests/vm/`](../tests/vm)) boot real disk images in QEMU with KVM and UEFI firmware. The assertions
   run inside the guest: the host passes a unit and a script as systemd credentials on QEMU's SMBIOS table, and the
   script reports on a serial port. The image under test is therefore unmodified, and the production image is tested
@@ -189,8 +191,10 @@ signature policy and the agent instructions.
 - **A VM cannot prove gamescope.** A virtual GPU has no Vulkan, so the VM tests exercise the cage fallback. gamescope
   on the DRM backend is checked on hardware ([runbook](runbook.md#testing-on-hardware)).
 - **Focus without `--steam`.** In plain gamescope a game window takes focus and hands it back. Games that open a
-  launcher window first (Steam titles) are untested; the fix is the launcher speaking gamescope's window protocol.
-- **Wi-Fi has no UI.** Wired network works out of the box. On the dev image, `nmtui` sets up Wi-Fi.
+  launcher window first (Steam titles) are untested; the fix is the launcher speaking gamescope's window protocol
+  ([pindu-launcher#377](https://github.com/Tim-van-Oudheusden/pindu-launcher/issues/377)).
+- **Wi-Fi in the launcher is for home networks.** Quick Access joins open and WPA/WPA2/WPA3 personal networks.
+  Enterprise (802.1X) and hidden networks, static addresses, VPNs and proxies need `nmtui` on the dev image.
 - **A raw image does not grow on bare metal.** Fedora's `bootc-generic-growpart.service` only runs in VMs. Install on
   PCs from the ISO.
 - **The keyring is not encrypted**, and neither is the disk ([decision 0010](decisions/0010-keyring.md)).

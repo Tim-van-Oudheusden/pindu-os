@@ -144,6 +144,16 @@ lint:
         echo "no cosign.pub yet (docs/runbook.md, Signing key)"
     fi
 
+# Test the scripts the workflows run (tests/ci/*.sh) against stubbed registry and GitHub lookups
+[group('check')]
+test-ci:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    for test in tests/ci/*.sh; do
+        echo "== ${test}"
+        bash "${test}"
+    done
+
 # Run the container tests (tests/container/*.sh) inside the built image of a variant
 [group('check')]
 test variant="prod":

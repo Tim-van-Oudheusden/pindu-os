@@ -104,13 +104,41 @@ A failed daily build usually means Fedora changed under us. Common causes:
 `:stable` is a `:testing` build that has been looked at.
 
 1. Check the build you want: its VM test passed, and it runs on the test machine (see below).
-2. Run the **Promote** workflow. `source` is `testing`, or a version tag such as `45.20261115.0` to promote an older
+2. If it changes the launcher, record the launcher's hardware check first (below).
+3. Run the **Promote** workflow. `source` is `testing`, or a version tag such as `45.20261115.0` to promote an older
    build.
-3. Approve the run (the `promote` environment asks for a reviewer).
+4. Approve the run (the `promote` environment asks for a reviewer).
 
-The workflow verifies the signature of both variants, retags the same digests as `:stable` and then builds the disk
-images. Nothing is rebuilt. Devices pick the new `:stable` up within four hours of use and run it after their next
-start. To take a bad release back, promote the previous version tag.
+The workflow verifies the signature of both variants and the launcher hardware check, retags the same digests as
+`:stable` and then builds the disk images. Nothing is rebuilt. Devices pick the new `:stable` up within four hours of
+use and run it after their next start. To take a bad release back, promote the previous version tag.
+
+### Launcher hardware check
+
+The VM tests cannot show gamescope, controllers or a Proton game, so a new launcher reaches `:stable` only after a
+person ran the launcher's hardware checklist on a real PC ([decision 0012](decisions/0012-launcher-releases.md)).
+
+`promote.yml` runs `.github/scripts/launcher-gate.sh` on the digest it promotes. It reads `LAUNCHER_VERSION` from
+`image.env` at the commit each image was built from (its `org.opencontainers.image.revision` label), for the image
+and for the current `:stable`:
+
+- the same launcher: the promotion goes ahead;
+- a different launcher, or no `:stable` yet: it goes ahead only if the pindu-launcher issue titled exactly
+  `Release X.Y.Z` (the final version, open or closed) has the label `hardware-check:passed`. Otherwise the job fails
+  with "No passed hardware check for launcher X.Y.Z" and nothing is retagged. A launcher pre-release never passes.
+
+To record a pass **(person)**: run the checklist on the launcher's `Release X.Y.Z` issue (pindu-launcher's
+`docs/releasing.md`, *Hardware checklist*), and once every box is ticked add the label:
+
+```sh
+gh issue edit <number> -R Tim-van-Oudheusden/pindu-launcher --add-label hardware-check:passed
+```
+
+Then run **Promote** again. The label is the record, so only add it after the checklist passed; a failed check is a
+comment on the issue and a new release. Rolling back across a launcher change needs the label on the older launcher's
+release issue too: it was on `:stable` before, so label its `Release X.Y.Z` issue (create one if there is none).
+
+The gate's test runs with `just test-ci` (`tests/ci/launcher-gate.sh`, stubbed registry and issues) in `pr.yml`.
 
 ### Disk images
 
@@ -123,7 +151,8 @@ promotion; run it by hand for the dev variant or another tag. `docs/install.md` 
 Renovate opens the pull requests that change `image.env` and the action SHAs, and each one has to pass `pr.yml`:
 
 - base image, akmods and bootc-image-builder digests: one grouped pull request a week
-- the launcher: on each launcher release, version and SHA-256 together
+- the launcher: on each final launcher release, version and SHA-256 together. Pre-releases (`vX.Y.Z-rc.N`) are
+  ignored; they soak in the launcher repository ([decision 0012](decisions/0012-launcher-releases.md))
 - tools and GitHub Actions: as they are released
 
 To bump the launcher by hand, set `LAUNCHER_VERSION` and `LAUNCHER_SHA256` (the `sha256` of

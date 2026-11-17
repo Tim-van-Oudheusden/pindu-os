@@ -17,3 +17,4 @@ the cost; when a decision changes, add a new record rather than rewriting an acc
 | 0009 | [Runners](0009-runners.md) | GitHub-hosted only; pull request code never meets a secret or write token. |
 | 0010 | [Keyring](0010-keyring.md) | The Secret Service keyring has no password. |
 | 0011 | [Users and access](0011-users-and-access.md) | One locked `pindu` user; sshd and sudo only in the dev image. |
+| 0012 | [Launcher releases](0012-launcher-releases.md) | Final launcher releases only; a new launcher reaches `:stable` after its hardware check. |

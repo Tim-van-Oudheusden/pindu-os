@@ -51,8 +51,8 @@ back the same way.
   every input is prebuilt and pinned in [`image.env`](image.env), so a diff of that file explains any change in the
   image.
 
-Not there yet: NVIDIA graphics, setup screens for Wi-Fi and Bluetooth, and preinstalled game stores. The
-[roadmap](#roadmap) says what comes next.
+Not there yet: NVIDIA graphics, a variant for handhelds, and game stores. The image has no Flatpak and no store, so
+the library starts empty. The [roadmap](#roadmap) says what comes next.
 
 ## Images
 
@@ -77,9 +77,9 @@ contents (an SBOM). The install guide has the two commands that
 > **The installer erases the PC's disk.** It installs only on a PC with exactly one disk (the USB stick does not count),
 > shows that disk and erases it once you type `erase`. Disconnect any other disk before you start.
 
-You need a 64-bit Intel or AMD PC with UEFI firmware, an AMD or Intel GPU, a network cable, a USB stick of 8 GB or
-more, a keyboard for the installer, and a controller. Until the first `:stable` release there is no installer to
-download; `just build-iso` builds one from this repository.
+You need a 64-bit Intel or AMD PC with UEFI firmware, an AMD or Intel GPU, a network cable or Wi-Fi, a USB stick of
+8 GB or more, a keyboard for the installer, and a controller. Until the first `:stable` release there is no installer
+to download; `just build-iso` builds one from this repository.
 
 1. Download the installer ISO from the latest run of the
    [Disk images](https://github.com/Tim-van-Oudheusden/pindu-os/actions/workflows/disk.yml) workflow and check it
@@ -163,10 +163,16 @@ just build-iso && just test-install
 1. **First boot on hardware.** The dev image on a PC with an AMD or Intel GPU
    ([#6](https://github.com/Tim-van-Oudheusden/pindu-os/issues/6)).
 2. **First `:stable` release.** Install from the ISO, take one update and roll back once
-   ([#7](https://github.com/Tim-van-Oudheusden/pindu-os/issues/7)).
-3. **Ready for games.** Game stores, a system panel in the launcher for power, network, Bluetooth and updates, a
-   boot splash, and variants for handhelds and NVIDIA graphics. The
-   [spec](docs/spec.md#phase-3-ready-for-games) lists the work
+   ([#7](https://github.com/Tim-van-Oudheusden/pindu-os/issues/7)). Alongside it: an installer that asks before it
+   erases a disk ([#28](https://github.com/Tim-van-Oudheusden/pindu-os/issues/28)), a console seen refusing an
+   unsigned image ([#5](https://github.com/Tim-van-Oudheusden/pindu-os/issues/5)), and launcher updates that wait in
+   `:testing` until they have run on hardware ([#30](https://github.com/Tim-van-Oudheusden/pindu-os/issues/30)).
+3. **Ready for games.** Flatpak and Flathub in the image
+   ([#29](https://github.com/Tim-van-Oudheusden/pindu-os/issues/29)), so that Pindu launcher can install Steam, Heroic
+   or Lutris ([pindu-launcher#378](https://github.com/Tim-van-Oudheusden/pindu-launcher/issues/378)), and the
+   launcher speaking gamescope's window protocol for Steam games
+   ([pindu-launcher#377](https://github.com/Tim-van-Oudheusden/pindu-launcher/issues/377)). After that, a boot splash
+   and variants for handhelds and NVIDIA graphics. The [spec](docs/spec.md#phase-3-ready-for-games) lists the work
    packages.
 
 ## Contributing
