@@ -187,8 +187,10 @@ signature policy and the agent instructions.
 - **A VM cannot prove gamescope.** A virtual GPU has no Vulkan, so the VM tests exercise the cage fallback. gamescope
   on the DRM backend is checked on hardware ([runbook](runbook.md#testing-on-hardware)).
 - **Focus without `--steam`.** In plain gamescope a game window takes focus and hands it back. Games that open a
-  launcher window first (Steam titles) are untested; the fix is the launcher speaking gamescope's window protocol.
-- **Wi-Fi has no UI.** Wired network works out of the box. On the dev image, `nmtui` sets up Wi-Fi.
+  launcher window first (Steam titles) are untested; the fix is the launcher speaking gamescope's window protocol
+  ([pindu-launcher#377](https://github.com/Tim-van-Oudheusden/pindu-launcher/issues/377)).
+- **Wi-Fi in the launcher is for home networks.** Quick Access joins open and WPA/WPA2/WPA3 personal networks.
+  Enterprise (802.1X) and hidden networks, static addresses, VPNs and proxies need `nmtui` on the dev image.
 - **A raw image does not grow on bare metal.** Fedora's `bootc-generic-growpart.service` only runs in VMs. Install on
   PCs from the ISO.
 - **The keyring is not encrypted**, and neither is the disk ([decision 0010](decisions/0010-keyring.md)).
