@@ -44,7 +44,30 @@
   .title { font-weight: 700; letter-spacing: -0.028em; line-height: 1; white-space: nowrap; }
   .title b { font-weight: 700; background: linear-gradient(180deg, #9ff3ff 0%, #49c8ff 55%, #2b8dff 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
   .sub { font-family: 'Inter', sans-serif; font-weight: 600; color: #8fdcff; letter-spacing: -0.012em; white-space: nowrap; }
-  .line { font-family: 'Inter', sans-serif; font-weight: 400; color: rgba(255,255,255,.72); white-space: nowrap; }
+  .line { font-family: 'Inter', sans-serif; font-weight: 400; color: rgba(255,255,255,.72); white-space: nowrap; line-height: 1.36; }
+
+  /* light variant: banner, social preview and link-preview image */
+  .card.light.rounded::after { border-color: rgba(10,19,64,.14); }
+  .light .bg { background:
+      radial-gradient(100% 140% at 100% 100%, rgba(73,170,255,.50) 0%, rgba(73,170,255,0) 60%),
+      radial-gradient(80% 120% at 0% 0%, rgba(255,255,255,.9) 0%, rgba(255,255,255,0) 60%),
+      linear-gradient(135deg, #f6fbff 0%, #e2f0ff 50%, #c4dfff 100%); }
+  .light .swoosh { background: linear-gradient(160deg, rgba(10,108,240,.08), rgba(10,108,240,.03) 45%, rgba(10,108,240,0) 70%); }
+  .light .swoosh::before { background: linear-gradient(150deg, rgba(10,108,240,.55), rgba(10,108,240,.18) 35%, rgba(10,108,240,0) 62%); }
+  .light .glow, .light .icon::after { display: none; }
+  .light .icon img { filter: drop-shadow(0 calc(var(--is) * .07) calc(var(--is) * .12) rgba(10,60,160,.38)); }
+  .light .title { color: #0a1340; }
+  .light .title b { background: linear-gradient(180deg, #1aa6ff 0%, #0a6cf0 60%, #0a45c8 100%); -webkit-background-clip: text; background-clip: text; }
+  .light .sub { color: #0a5fd8; }
+  .light .line { color: rgba(10,19,64,.72); }
+
+  /* television showing Pindu launcher's fullscreen Home (fullscreen-home.webp) */
+  .tv { position: absolute; z-index: 4; padding: 7px; border-radius: 12px; background: linear-gradient(180deg, #23273c, #070812);
+    box-shadow: 0 0 0 1px rgba(10,19,64,.25), 0 40px 80px rgba(10,60,160,.35), 0 10px 24px rgba(10,19,64,.25); }
+  .tv .shot { width: 100%; aspect-ratio: 16 / 9; border-radius: 5px; background: url(fullscreen-home.webp) center / cover no-repeat; }
+  .tv .neck { position: absolute; left: 50%; top: 100%; width: 8%; height: 20px; transform: translateX(-50%); background: linear-gradient(180deg, #080914, #1c2036); }
+  .tv .foot { position: absolute; left: 50%; top: calc(100% + 20px); width: 32%; height: 8px; border-radius: 8px 8px 3px 3px; transform: translateX(-50%);
+    background: linear-gradient(180deg, #2c3250, #10132a); box-shadow: 0 14px 22px rgba(10,19,64,.25); }
 
   /* screen motif */
   .stage { position: absolute; z-index: 3; perspective: 1400px; }
@@ -70,34 +93,30 @@
 
   /* ---------- layouts ---------- */
   /* README banner 1280x400 */
-  .banner .glow { left: -110px; top: -70px; width: 560px; height: 560px; }
   .banner .s1 { left: -260px; top: -520px; width: 1500px; height: 760px; transform: rotate(-9deg); }
   .banner .s2 { left: 300px; top: 262px; width: 1500px; height: 760px; transform: rotate(-14deg); opacity: .8; }
-  .banner .icon { --is: 216px; left: 64px; top: 92px; width: 216px; height: 216px; }
-  .banner .text { left: 318px; top: 0; height: 100%; display: flex; flex-direction: column; justify-content: center; }
-  .banner .title { font-size: 86px; }
-  .banner .sub { font-size: 36px; margin-top: 16px; }
-  .banner .line { font-size: 20px; margin-top: 22px; }
-  .banner .stage { left: 940px; top: 44px; width: 620px; height: 380px; }
-  .banner .fade { background: linear-gradient(90deg, rgba(0,2,26,0) 78%, rgba(3,9,45,.55) 100%); }
+  .banner .icon { --is: 176px; left: 56px; top: 112px; width: 176px; height: 176px; }
+  .banner .text { left: 262px; top: 0; height: 100%; display: flex; flex-direction: column; justify-content: center; }
+  .banner .title { font-size: 76px; }
+  .banner .sub { font-size: 31px; margin-top: 14px; }
+  .banner .line { font-size: 18px; margin-top: 16px; white-space: normal; width: 340px; }
+  .banner .tv { left: 800px; top: 58px; width: 436px; }
 
   /* social 1280x640 and OG 1200x630 */
-  .social .glow { left: -60px; top: 30px; width: 640px; height: 640px; }
   .social .s1 { left: -300px; top: -620px; width: 1700px; height: 980px; transform: rotate(-9deg); }
   .social .s2 { left: 240px; top: 452px; width: 1700px; height: 980px; transform: rotate(-14deg); opacity: .8; }
-  .social .icon { --is: 224px; left: 80px; top: 208px; width: 224px; height: 224px; }
-  .social .text { left: 348px; top: 0; height: 100%; display: flex; flex-direction: column; justify-content: center; }
-  .social .title { font-size: 96px; }
-  .social .sub { font-size: 37px; margin-top: 18px; }
-  .social .line { font-size: 21px; margin-top: 24px; }
-  .social .stage { left: 990px; top: 130px; width: 640px; height: 400px; }
-  .social .fade { background: linear-gradient(90deg, rgba(0,2,26,0) 80%, rgba(3,9,45,.6) 100%); }
-  .og .icon { left: 68px; top: 203px; }
-  .og .text { left: 328px; }
-  .og .title { font-size: 90px; }
-  .og .sub { font-size: 34px; }
-  .og .line { font-size: 19.5px; }
-  .og .stage { left: 925px; top: 125px; }
+  .social .icon { --is: 184px; left: 64px; top: 228px; width: 184px; height: 184px; }
+  .social .text { left: 276px; top: 0; height: 100%; display: flex; flex-direction: column; justify-content: center; }
+  .social .title { font-size: 80px; }
+  .social .sub { font-size: 32px; margin-top: 15px; }
+  .social .line { font-size: 19px; margin-top: 18px; white-space: normal; width: 360px; }
+  .social .tv { left: 786px; top: 176px; width: 438px; }
+  .og .icon { --is: 172px; left: 56px; top: 229px; width: 172px; height: 172px; }
+  .og .text { left: 254px; }
+  .og .title { font-size: 75px; }
+  .og .sub { font-size: 30px; }
+  .og .line { font-size: 18px; width: 340px; }
+  .og .tv { left: 736px; top: 178px; width: 412px; }
 
   /* article cover 1920x1080 */
   .cover .glow { left: 50%; top: 50%; width: 1300px; height: 1300px; transform: translate(-50%, -54%); }
@@ -152,6 +171,7 @@
     </div>
   </div>
   <div class="fade"></div>
+  <div class="tv" id="tv"><div class="shot"></div><div class="neck"></div><div class="foot"></div></div>
   <div class="icon"><img src="../icon.png" alt=""></div>
   <div class="text" id="text">
     <div class="title">Pindu <b>OS</b></div>
@@ -170,6 +190,7 @@
   if (line) document.getElementById('line').textContent = line; else document.getElementById('line').remove();
   if (q.get('notext')) document.getElementById('text').remove();
   if (q.get('nostage')) document.getElementById('stage').remove();
+  if (!q.get('tv')) document.getElementById('tv').remove();
   if (q.get('nobg')) ['.bg', '.swoosh.s1', '.swoosh.s2', '.glow', '.grain', '.fade'].forEach(s => document.querySelector(s)?.remove());
 </script>
 </body>

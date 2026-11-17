@@ -1,4 +1,4 @@
-// Renders the Pindu OS artwork from scene.html and ../icon.png.
+// Renders the Pindu OS artwork from scene.html, ../icon.png and fullscreen-home.webp.
 //
 //   node build.js                 the files kept in docs/brand/
 //   node build.js --extras <dir>  article covers, link-preview image and avatar, into <dir>
@@ -12,15 +12,16 @@ const fs = require('fs');
 const SUB = 'Boot straight into your games';
 const LINE = 'An image-based Linux for the couch, built on Fedora bootc';
 
-// w and h are CSS pixels; the file is w*scale by h*scale. `cls` selects a layout in scene.html.
+// w and h are CSS pixels; the file is w*scale by h*scale. `cls` selects a layout in scene.html, `light` its light
+// colours, and `tv` adds the television that shows fullscreen-home.webp.
 const brand = [
-  { out: 'readme-banner.webp', w: 1280, h: 400, scale: 2, cls: 'banner rounded', sub: SUB, line: LINE, transparent: true },
-  { out: 'social-preview.png', w: 1280, h: 640, scale: 1, cls: 'social', sub: SUB, line: LINE },
+  { out: 'readme-banner.webp', w: 1280, h: 400, scale: 2, cls: 'banner rounded light', sub: SUB, line: LINE, tv: 1, nostage: 1, transparent: true },
+  { out: 'social-preview.png', w: 1280, h: 640, scale: 1, cls: 'social light', sub: SUB, line: LINE, tv: 1, nostage: 1 },
   { out: 'lockup-for-dark.png', w: 900, h: 320, scale: 1, cls: 'lockup', nobg: 1, nostage: 1, transparent: true },
   { out: 'lockup-for-light.png', w: 900, h: 320, scale: 1, cls: 'lockup light', nobg: 1, nostage: 1, transparent: true },
 ];
 const extras = [
-  { out: 'og-image.png', w: 1200, h: 630, scale: 1, cls: 'social og', sub: SUB, line: LINE },
+  { out: 'og-image.png', w: 1200, h: 630, scale: 1, cls: 'social og light', sub: SUB, line: LINE, tv: 1, nostage: 1 },
   { out: 'avatar.png', w: 1024, h: 1024, scale: 1, cls: 'avatar', notext: 1, nostage: 1 },
   { out: 'article-cover.png', w: 1920, h: 1080, scale: 1, cls: 'cover', sub: SUB, nostage: 1 },
   { out: 'article-cover-icon-only.png', w: 1920, h: 1080, scale: 1, cls: 'cover blank', notext: 1, nostage: 1 },
@@ -59,7 +60,7 @@ async function toWebp(browser, png) {
       deviceScaleFactor: job.scale,
     });
     const query = new URLSearchParams({ w: job.w, h: job.h, cls: job.cls });
-    for (const key of ['sub', 'line', 'notext', 'nostage', 'nobg']) {
+    for (const key of ['sub', 'line', 'notext', 'nostage', 'nobg', 'tv']) {
       if (job[key]) query.set(key, job[key]);
     }
     await page.goto('file://' + path.join(__dirname, 'scene.html') + '?' + query);

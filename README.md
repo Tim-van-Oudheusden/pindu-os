@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/brand/readme-banner.webp" alt="Pindu OS: boot straight into your games. An image-based Linux for the couch, built on Fedora bootc.">
+<img src="docs/brand/readme-banner.webp" alt="Pindu OS: boot straight into your games. An image-based Linux for the couch, built on Fedora bootc. Beside the name, a television shows Pindu launcher's fullscreen Home.">
 
 [Install](#install) · [Features](#features) · [How it works](#how-it-works) · [Documentation](#documentation) ·
 [Report a bug](https://github.com/Tim-van-Oudheusden/pindu-os/issues/new) · [Roadmap](#roadmap)
@@ -209,6 +209,7 @@ Universal Blue. Product names and trademarks belong to their owners.
 | --- | --- |
 | Code and everything not listed below | [GNU General Public License v3.0 or later](LICENSE) |
 | `docs/brand/` | [GPL-3.0-or-later](LICENSE); the text in the images is set in [Inter](https://github.com/rsms/inter), SIL Open Font License 1.1 |
+| Game art in the screenshot on the banner's television | Belongs to each game's publisher; shown as Pindu launcher displays a real library |
 
 Parts of the repository layout and the build recipes are adapted from
 [ublue-os/image-template](https://github.com/ublue-os/image-template) (Apache-2.0) and
