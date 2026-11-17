@@ -107,10 +107,17 @@ for action in app-install runtime-install app-update runtime-update; do
         pkcheck --action-id "org.freedesktop.Flatpak.${action}" --process "${launcher}" \
         --detail origin flathub --detail ref "${steam}"
 done
-check_not "polkit refuses the launcher app-install from another remote" \
-    pkcheck --action-id org.freedesktop.Flatpak.app-install --process "${launcher}" \
-    --detail origin fedora --detail ref "${steam}"
-for action in app-uninstall runtime-uninstall install-bundle configure-remote configure; do
+# flatpak's own rule (org.freedesktop.Flatpak.rules) lets an active local wheel member install
+# from any remote and uninstall without a password. The dev image puts pindu in wheel
+# (build_files/80-variant-dev.sh); the production image does not, and there they stay refused.
+admin_only=(install-bundle configure-remote configure)
+if ! id -nG pindu | grep -qw wheel; then
+    check_not "polkit refuses the launcher app-install from another remote" \
+        pkcheck --action-id org.freedesktop.Flatpak.app-install --process "${launcher}" \
+        --detail origin fedora --detail ref "${steam}"
+    admin_only+=(app-uninstall runtime-uninstall)
+fi
+for action in "${admin_only[@]}"; do
     check_not "polkit refuses the launcher org.freedesktop.Flatpak.${action}" \
         pkcheck --action-id "org.freedesktop.Flatpak.${action}" --process "${launcher}" \
         --detail origin flathub --detail remote flathub --detail ref "${steam}"
