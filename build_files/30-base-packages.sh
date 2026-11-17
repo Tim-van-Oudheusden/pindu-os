@@ -58,7 +58,8 @@ packages=(
     bluez
 
     # Controllers. udev rules that give the logged-in user access to the raw HID interfaces
-    # of Steam, PlayStation, Switch and other controllers (rumble, gyro, Steam Input).
+    # of Steam, PlayStation, Switch and other controllers (rumble, gyro, Steam Input), and to
+    # uinput for Steam Input's virtual pads. Flatpak Steam relies on the host's copy.
     steam-devices
 
     # Fonts. Adwaita Sans and Mono are libadwaita's interface fonts; Noto covers the scripts

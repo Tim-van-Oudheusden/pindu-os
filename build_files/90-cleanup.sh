@@ -20,9 +20,10 @@ find /var/log /var/tmp /boot -mindepth 1 -delete
 find /var/cache -mindepth 1 -maxdepth 1 ! -name libdnf5 -exec rm -rf {} +
 rm -rf /var/lib/dnf /var/roothome
 # State directories that packages ship without a tmpfiles.d entry, which bootc would copy on
-# installation only. bluetooth.service and geoclue create theirs when they start; greetd's is
-# a portal mask for its greeter user, which this image does not use.
-rm -rf /var/lib/bluetooth /var/lib/geoclue /var/lib/greetd/.config
+# installation only. bluetooth.service, geoclue and accounts-daemon (which flatpak's parental
+# controls library pulls in) create theirs when they start; greetd's is a portal mask for its
+# greeter user, which this image does not use.
+rm -rf /var/lib/bluetooth /var/lib/geoclue /var/lib/AccountsService /var/lib/greetd/.config
 
 # Exactly one kernel, with its initramfs.
 kernels=(/usr/lib/modules/*)

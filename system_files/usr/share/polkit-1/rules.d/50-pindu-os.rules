@@ -1,5 +1,6 @@
-// What the launcher's system panel may do as the pindu user without a password
-// (https://github.com/Tim-van-Oudheusden/pindu-launcher/blob/main/docs/system-panel.md#pindu-os-side).
+// What the launcher may do as the pindu user without a password: its system panel
+// (https://github.com/Tim-van-Oudheusden/pindu-launcher/blob/main/docs/system-panel.md#pindu-os-side)
+// and its "add a store" flow (docs/decisions/0013-game-sources.md).
 // The gamescope session has no polkit agent, so anything that would ask for authentication
 // fails there. Fedora's defaults already allow the active session logind's power off, reboot
 // and suspend, and NetworkManager's network-control and wifi.scan; this file grants the rest,
@@ -19,6 +20,19 @@ polkit.addRule(function (action, subject) {
     // Save Wi-Fi networks as system connections, so they come up before login. Fedora's
     // default is auth_admin_keep.
     if (action.id === "org.freedesktop.NetworkManager.settings.modify.system") {
+        return polkit.Result.YES;
+    }
+
+    // Install and update apps and runtimes from Flathub in the system installation, for the
+    // launcher's "add a store" flow. flatpak's system helper names the remote in "origin".
+    // Fedora's defaults already allow the active session to update apps and refresh remotes;
+    // installing from any other remote, uninstalling and changing remotes still need an
+    // administrator, which this console does not have.
+    if ((action.id === "org.freedesktop.Flatpak.app-install" ||
+         action.id === "org.freedesktop.Flatpak.runtime-install" ||
+         action.id === "org.freedesktop.Flatpak.app-update" ||
+         action.id === "org.freedesktop.Flatpak.runtime-update") &&
+        action.lookup("origin") === "flathub") {
         return polkit.Result.YES;
     }
 

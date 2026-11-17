@@ -63,9 +63,9 @@ not selected is never pulled.
 | `10-repos.sh` | Records the base image's repositories. v0 enables no other: Fedora 45 packages gamescope, cage and greetd. |
 | `20-kernel.sh` | Nothing for `fedora`. For `ogc`, replaces the kernel packages with the ones from `/kernel-rpms`. |
 | `30-base-packages.sh` | Mesa and Vulkan, firmware, PipeWire, NetworkManager with Wi-Fi, BlueZ, controller udev rules, fonts. Removes `openssh-server` and `sudo`. |
-| `40-session-packages.sh` | greetd, gamescope, Xwayland, cage, portals, dconf, gnome-keyring, GStreamer plugins, MangoHud, GameMode. |
+| `40-session-packages.sh` | greetd, gamescope, Xwayland, cage, portals, dconf, gnome-keyring, GStreamer plugins, MangoHud, GameMode, Flatpak. |
 | `50-launcher.sh` | Installs the launcher RPM and checks its version and libraries. |
-| `60-system-files.sh` | Copies `system_files/`, creates the `pindu` user, enables greetd, the graphical target and the update timer. |
+| `60-system-files.sh` | Copies `system_files/`, creates the `pindu` user, enables greetd, the graphical target and the update timers, disables Fedora's Flatpak remote unit. |
 | `70-os-release.sh` | Writes os-release (`ID=pindu-os`, `ID_LIKE=fedora`) and `/usr/share/pindu-os/image-info.json`, rebuilds the initramfs. |
 | `80-variant-dev.sh` | Only for `VARIANT=dev`: sshd, sudo, a shell on VT 2, debugging tools. |
 | `90-cleanup.sh` | Empties `/var` and `/boot`, then checks the result: one kernel, the boot chain's packages, no added repository, no desktop environment. |
@@ -126,6 +126,25 @@ with a locked password. Its home, `/var/home/pindu`, is created on first boot.
 
 A variant is a build argument of the same `Containerfile`: `VARIANT`, `KERNEL_FLAVOR` and `BASE_IMAGE`.
 
+## Game stores
+
+No store is preinstalled. The launcher's "add a store" flow installs Steam, Heroic or Lutris as Flatpaks from Flathub
+into the system installation ([decision 0013](decisions/0013-game-sources.md)):
+
+- [`flathub.flatpakrepo`](../system_files/usr/share/flatpak/remotes.d/flathub.flatpakrepo) in
+  `/usr/share/flatpak/remotes.d` makes `flathub`, with Flathub's signing key, the system installation's only remote.
+  flatpak adds it the first time it opens `/var/lib/flatpak`, which tmpfiles.d creates on first boot.
+- Fedora's `flatpak-add-fedora-repos.service` is disabled, and
+  [`40-pindu-os.preset`](../system_files/usr/lib/systemd/system-preset/40-pindu-os.preset) keeps it disabled through
+  the first-boot presets, so the Fedora remote never appears.
+- [`50-pindu-os.rules`](../system_files/usr/share/polkit-1/rules.d/50-pindu-os.rules) lets `pindu`, in an active local
+  session, install and update apps and runtimes from `flathub` without a password, and nothing else Fedora's defaults
+  do not already allow.
+- `pindu-os-flatpak-update.timer` runs `flatpak update --system --noninteractive` 30 minutes after boot and every 12
+  hours, at idle priority.
+- `steam-devices` provides the controller and `uinput` udev rules that Flatpak Steam needs from the host. MangoHud and
+  GameMode are RPMs in the image.
+
 ## Updates and trust
 
 - The image is published as `ghcr.io/tim-van-oudheusden/pindu-os` (and `pindu-os-dev`) with three kinds of tag:
@@ -140,8 +159,9 @@ A variant is a build argument of the same `Containerfile`: `VARIANT`, `KERNEL_FL
   - `pindu-os-rollback.service` runs `bootc rollback`, then the status unit. It is never enabled; the launcher starts
     it.
   - [`50-pindu-os.rules`](../system_files/usr/share/polkit-1/rules.d/50-pindu-os.rules) lets `pindu`, in an active
-    local session, start that one unit and save system-wide NetworkManager connections without a password. Fedora's
-    defaults already allow the session to power off, reboot, suspend, control the network and scan for Wi-Fi.
+    local session, start that one unit and save system-wide NetworkManager connections without a password (and
+    install from Flathub, above). Fedora's defaults already allow the session to power off, reboot, suspend, control
+    the network and scan for Wi-Fi.
 - CI signs each pushed digest with a cosign key. The image carries the public key
   (`/etc/pki/containers/pindu-os.pub`) and [`policy.json`](../system_files/etc/containers/policy.json), which makes
   the container tools refuse an image from our two repositories unless it has that signature. The installer sets the
@@ -170,7 +190,8 @@ signature policy and the agent instructions.
 - **Container tests** ([`tests/container/`](../tests/container)) run inside the built image with `just test`: the
   package lists, the launcher's version and libraries, the session script against stub compositors (fallback after two
   failed gamescope starts, none when gamescope stays up, the 1080-line render size), the user and autologin
-  configuration, the variant's access rules, the signature policy and the update units.
+  configuration, the variant's access rules, the signature policy, the update units, and the Flatpak remote, the
+  disabled Fedora remote unit, the controller rules and the Flatpak update units.
 - **Workflow script tests** ([`tests/ci/`](../tests/ci)) run on the host with `just test-ci`: the promote gate
   against a stub registry and stub launcher issues, with `image.env` from a scratch git repository.
 - **VM tests** ([`tests/vm/`](../tests/vm)) boot real disk images in QEMU with KVM and UEFI firmware. The assertions
@@ -178,8 +199,9 @@ signature policy and the agent instructions.
   script reports on a serial port. The image under test is therefore unmodified, and the production image is tested
   without an SSH server.
   - `boot.sh`: a `pindu` session on seat0 within 60 seconds of boot, a locked password, `pindu-session.service`
-    active, a `pindu-launcher` process, sound, a portal that answers, a keyring that opens without a prompt, and a
-    screenshot that is not blank. With `--ssh` (dev image): SSH with an injected key, and sudo.
+    active, a `pindu-launcher` process, sound, a portal that answers, a keyring that opens without a prompt, polkit's
+    answers for the system panel and for installing from Flathub, `flathub` in `pindu`'s view of the system
+    installation, and a screenshot that is not blank. With `--ssh` (dev image): SSH with an injected key, and sudo.
   - `update.sh`: four boots. The guest switches to the image as served by a local registry, the host pushes a newer
     one, the update service stages it without a reboot, the next boot runs it, and `bootc rollback` returns.
   - `install.sh`: installs from the ISO unattended onto an empty disk, then runs `boot.sh` on the installed disk.

@@ -1,0 +1,18 @@
+# Updates the apps and runtimes in the system installation, where the launcher's "add a
+# store" flow installs from Flathub. A running app keeps its old version until it is started
+# again, so an update never interrupts a game; it runs at idle priority so it does not slow
+# one down either (docs/decisions/0013-game-sources.md).
+
+[Unit]
+Description=Update Flatpak apps
+Documentation=https://github.com/Tim-van-Oudheusden/pindu-os/blob/main/docs/decisions/0013-game-sources.md
+Wants=network-online.target
+After=network-online.target
+# Nothing is installed before the launcher first uses the installation.
+ConditionPathExists=/var/lib/flatpak/repo
+
+[Service]
+Type=oneshot
+Nice=19
+IOSchedulingClass=idle
+ExecStart=/usr/bin/flatpak update --system --noninteractive

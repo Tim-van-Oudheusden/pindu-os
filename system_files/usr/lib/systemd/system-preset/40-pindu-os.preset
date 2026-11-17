@@ -1,0 +1,5 @@
+# Fedora's flatpak package enables flatpak-add-fedora-repos.service, which adds the Fedora
+# Flatpaks remote at boot. Flathub is the system installation's only remote
+# (/usr/share/flatpak/remotes.d/flathub.flatpakrepo). systemd applies the presets again on a
+# device's first boot; this file sorts before Fedora's, so the unit stays off.
+disable flatpak-add-fedora-repos.service
