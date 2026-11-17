@@ -44,6 +44,14 @@
       enabled: false,
     },
     {
+      // Launcher pre-releases (vX.Y.Z-rc.N) soak on the launcher's own test machines; image.env
+      // only follows final releases, which promote.yml holds until their hardware check passed
+      // (docs/decisions/0012-launcher-releases.md).
+      matchPackageNames: ["Tim-van-Oudheusden/pindu-launcher"],
+      ignoreUnstable: true,
+      allowedVersions: "!/-/",
+    },
+    {
       // These tags move every day. One pull request a week is enough; the daily build picks up
       // Fedora's package updates in between.
       matchPackageNames: [

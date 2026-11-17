@@ -14,7 +14,8 @@ This file is authoritative. `CLAUDE.md` is a short companion that defers to it.
 - If an issue and the spec disagree, the issue wins; say so in the PR.
 - `Containerfile` has three stages: `ctx` (scripts and files), `launcher` (the verified RPM), `image`.
 - `build_files/build.sh` runs the numbered scripts in order. `system_files/` is copied to `/` as it is.
-- `tests/container/` are shell checks that run inside the built image; `tests/vm/` boots disk images in QEMU.
+- `tests/container/` are shell checks that run inside the built image; `tests/vm/` boots disk images in QEMU;
+  `tests/ci/` tests the scripts in `.github/scripts/` that the workflows run.
 - `.github/workflows/`: `pr.yml` (lint, build, test; no secrets), `build.yml` (publish and sign), `disk.yml`
   (disk images), `promote.yml` (`:testing` to `:stable`).
 
@@ -52,6 +53,7 @@ A pull request includes the output of these, and a new test for the behaviour it
 just lint          # shellcheck, hadolint, just --fmt, actionlint, zizmor (all run from pinned containers)
 just build         # the image, including `bootc container lint --fatal-warnings`; `just build dev` for the dev image
 just test          # tests/container/*.sh inside the built image; `just test dev` for the dev image
+just test-ci       # tests/ci/*.sh: the workflow scripts against stubbed registry and GitHub lookups
 ```
 
 A change to the session, the user, the boot chain, updates or the disk configuration also runs the VM tests. They need
