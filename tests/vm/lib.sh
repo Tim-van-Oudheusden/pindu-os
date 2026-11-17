@@ -142,12 +142,13 @@ vm_running() {
     kill -0 "${VM_PID}" 2>/dev/null
 }
 
-# vm_wait_for PATTERN TIMEOUT: wait until a line of test.log matches the extended regular
-# expression. Fails after TIMEOUT seconds or when QEMU exits.
+# vm_wait_for PATTERN TIMEOUT [LOG]: wait until a line of LOG (default test.log, the guest's
+# report; console.log is the first serial port) matches the extended regular expression.
+# Fails after TIMEOUT seconds or when QEMU exits.
 vm_wait_for() {
-    local pattern=$1 deadline=$((SECONDS + $2))
+    local pattern=$1 deadline=$((SECONDS + $2)) log=${VM_OUT}/${3:-test.log}
     while ((SECONDS < deadline)); do
-        if grep --quiet --extended-regexp --text "${pattern}" "${VM_OUT}/test.log" 2>/dev/null; then
+        if grep --quiet --extended-regexp --text "${pattern}" "${log}" 2>/dev/null; then
             return 0
         fi
         vm_running || return 1
