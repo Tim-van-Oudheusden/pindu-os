@@ -1,6 +1,6 @@
 // What the launcher may do as the pindu user without a password: its system panel
 // (https://github.com/Tim-van-Oudheusden/pindu-launcher/blob/main/docs/system-panel.md#pindu-os-side)
-// and its "add a store" flow (docs/decisions/0012-game-sources.md).
+// and its "add a store" flow (docs/decisions/0013-game-sources.md).
 // The gamescope session has no polkit agent, so anything that would ask for authentication
 // fails there. Fedora's defaults already allow the active session logind's power off, reboot
 // and suspend, and NetworkManager's network-control and wifi.scan; this file grants the rest,

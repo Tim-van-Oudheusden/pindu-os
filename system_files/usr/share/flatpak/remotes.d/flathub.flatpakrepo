@@ -2,7 +2,7 @@
 # installation (/var/lib/flatpak, empty on a new device) and never again, so a remote the user
 # removes stays removed. The group below is an unchanged copy of
 # https://dl.flathub.org/repo/flathub.flatpakrepo; GPGKey is Flathub's signing key
-# (docs/decisions/0012-game-sources.md).
+# (docs/decisions/0013-game-sources.md).
 [Flatpak Repo]
 Title=Flathub
 Url=https://dl.flathub.org/repo/

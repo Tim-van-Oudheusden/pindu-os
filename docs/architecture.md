@@ -129,7 +129,7 @@ A variant is a build argument of the same `Containerfile`: `VARIANT`, `KERNEL_FL
 ## Game stores
 
 No store is preinstalled. The launcher's "add a store" flow installs Steam, Heroic or Lutris as Flatpaks from Flathub
-into the system installation ([decision 0012](decisions/0012-game-sources.md)):
+into the system installation ([decision 0013](decisions/0013-game-sources.md)):
 
 - [`flathub.flatpakrepo`](../system_files/usr/share/flatpak/remotes.d/flathub.flatpakrepo) in
   `/usr/share/flatpak/remotes.d` makes `flathub`, with Flathub's signing key, the system installation's only remote.

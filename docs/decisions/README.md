@@ -17,4 +17,4 @@ the cost; when a decision changes, add a new record rather than rewriting an acc
 | 0009 | [Runners](0009-runners.md) | GitHub-hosted only; pull request code never meets a secret or write token. |
 | 0010 | [Keyring](0010-keyring.md) | The Secret Service keyring has no password. |
 | 0011 | [Users and access](0011-users-and-access.md) | One locked `pindu` user; sshd and sudo only in the dev image. |
-| 0012 | [Game sources](0012-game-sources.md) | Stores as Flatpaks from Flathub in the system installation; MangoHud and GameMode as RPMs. |
+| 0013 | [Game sources](0013-game-sources.md) | Stores as Flatpaks from Flathub in the system installation; MangoHud and GameMode as RPMs. |

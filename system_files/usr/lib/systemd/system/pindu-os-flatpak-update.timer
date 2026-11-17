@@ -3,7 +3,7 @@
 
 [Unit]
 Description=Update Flatpak apps regularly
-Documentation=https://github.com/Tim-van-Oudheusden/pindu-os/blob/main/docs/decisions/0012-game-sources.md
+Documentation=https://github.com/Tim-van-Oudheusden/pindu-os/blob/main/docs/decisions/0013-game-sources.md
 
 [Timer]
 OnBootSec=30min

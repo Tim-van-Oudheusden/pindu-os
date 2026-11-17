@@ -1,4 +1,4 @@
-# 0012: Game sources
+# 0013: Game sources
 
 Status: accepted (2026-11-17), settles spec OS-17 (issue #29)
 

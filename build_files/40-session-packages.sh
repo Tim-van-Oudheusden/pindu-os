@@ -48,7 +48,7 @@ packages=(
     gamemode
 
     # Game stores. The launcher's "add a store" flow installs Steam, Heroic or Lutris from
-    # Flathub into the system installation (docs/decisions/0012-game-sources.md).
+    # Flathub into the system installation (docs/decisions/0013-game-sources.md).
     flatpak
 )
 
