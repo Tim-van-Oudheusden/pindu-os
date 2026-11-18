@@ -39,7 +39,7 @@
     {
       // A Fedora release bump is manual: FEDORA_VERSION, the base tag, the akmods tag and the
       // launcher RPM's dist tag move together. Renovate only follows the digest of the pinned tag.
-      matchPackageNames: ["quay.io/fedora/fedora-bootc", "ghcr.io/ublue-os/akmods"],
+      matchPackageNames: ["registry.fedoraproject.org/fedora-bootc", "ghcr.io/ublue-os/akmods"],
       matchUpdateTypes: ["major", "minor", "patch"],
       enabled: false,
     },
@@ -55,7 +55,7 @@
       // These tags move every day. One pull request a week is enough; the daily build picks up
       // Fedora's package updates in between.
       matchPackageNames: [
-        "quay.io/fedora/fedora-bootc",
+        "registry.fedoraproject.org/fedora-bootc",
         "ghcr.io/ublue-os/akmods",
         "quay.io/centos-bootc/bootc-image-builder",
       ],

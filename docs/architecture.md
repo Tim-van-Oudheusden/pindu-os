@@ -35,7 +35,7 @@ the workflows read that file; Renovate ([`renovate.json5`](../renovate.json5)) o
 
 | Pin | What it is |
 | --- | --- |
-| `FEDORA_VERSION`, `BASE_IMAGE` | `quay.io/fedora/fedora-bootc:45`, the base image |
+| `FEDORA_VERSION`, `BASE_IMAGE` | `registry.fedoraproject.org/fedora-bootc:45`, the base image |
 | `LAUNCHER_VERSION`, `LAUNCHER_SHA256` | The launcher's release RPM on GitHub Releases |
 | `KERNEL_FLAVOR`, `AKMODS_IMAGE` | `fedora` keeps the base kernel; `ogc` takes the Open Gaming Collective kernel from ublue's akmods image |
 | `BIB_IMAGE` | bootc-image-builder, for disk images and the ISO |
