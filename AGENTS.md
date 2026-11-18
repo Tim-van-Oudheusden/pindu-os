@@ -65,6 +65,10 @@ just test-update                       # stages an update from a local registry,
 just build-iso && just test-install    # installs from the ISO unattended, then runs the boot assertions
 ```
 
+A pull request that changes what the image ships, or closes an issue the README names, brings the README's status,
+"Not there yet" list and roadmap up to date in the same pull request. Tie a launcher feature to the launcher release
+that adds it, not to the pin: Renovate bumps `LAUNCHER_VERSION` without touching the README.
+
 ## Safety boundaries
 
 - **Pins.** Do not change a pin in `image.env` unless the issue says so. Renovate opens the bump pull requests.
