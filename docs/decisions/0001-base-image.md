@@ -1,6 +1,6 @@
 # 0001: Base image
 
-Status: accepted (2026-11-15)
+Status: accepted (2026-11-15); the registry changed in [0014](0014-base-image-registry.md)
 
 ## Context
 

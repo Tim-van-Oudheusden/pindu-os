@@ -2,8 +2,8 @@
 
 Pindu OS (GPL-3.0-or-later) is one x86_64 [bootc](https://bootc-dev.github.io/bootc/) image that logs in automatically
 and shows [pindu-launcher](https://github.com/Tim-van-Oudheusden/pindu-launcher) fullscreen inside gamescope. It is
-built from a plain `Containerfile` on `quay.io/fedora/fedora-bootc:45` and compiles nothing itself: the launcher, the
-kernel and every tool are prebuilt inputs pinned in `image.env`.
+built from a plain `Containerfile` on `registry.fedoraproject.org/fedora-bootc:45` and compiles nothing itself: the
+launcher, the kernel and every tool are prebuilt inputs pinned in `image.env`.
 
 This file is authoritative. `CLAUDE.md` is a short companion that defers to it.
 
