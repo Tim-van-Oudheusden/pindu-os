@@ -51,8 +51,10 @@ back the same way.
   every input is prebuilt and pinned in [`image.env`](image.env), so a diff of that file explains any change in the
   image.
 
-Not there yet: NVIDIA graphics, a variant for handhelds, and game stores. The image has no Flatpak and no store, so
-the library starts empty. The [roadmap](#roadmap) says what comes next.
+Not there yet: NVIDIA graphics and a variant for handhelds. No game store is preinstalled: the image ships Flatpak
+with Flathub as its system remote, and Pindu launcher installs Steam, Heroic or Lutris from it with Add a Store, from
+launcher 0.5.0 on. [`image.env`](image.env) names the launcher version the image carries. The [roadmap](#roadmap) says
+what comes next.
 
 ## Images
 
@@ -163,17 +165,15 @@ just build-iso && just test-install
 1. **First boot on hardware.** The dev image on a PC with an AMD or Intel GPU
    ([#6](https://github.com/Tim-van-Oudheusden/pindu-os/issues/6)).
 2. **First `:stable` release.** Install from the ISO, take one update and roll back once
-   ([#7](https://github.com/Tim-van-Oudheusden/pindu-os/issues/7)). Alongside it: an installer that asks before it
-   erases a disk ([#28](https://github.com/Tim-van-Oudheusden/pindu-os/issues/28)), a console seen refusing an
-   unsigned image ([#5](https://github.com/Tim-van-Oudheusden/pindu-os/issues/5)), and launcher updates that wait in
-   `:testing` until they have run on hardware ([#30](https://github.com/Tim-van-Oudheusden/pindu-os/issues/30)).
-3. **Ready for games.** Flatpak and Flathub in the image
-   ([#29](https://github.com/Tim-van-Oudheusden/pindu-os/issues/29)), so that Pindu launcher can install Steam, Heroic
-   or Lutris ([pindu-launcher#378](https://github.com/Tim-van-Oudheusden/pindu-launcher/issues/378)), and the
-   launcher speaking gamescope's window protocol for Steam games
-   ([pindu-launcher#377](https://github.com/Tim-van-Oudheusden/pindu-launcher/issues/377)). After that, a boot splash
-   and variants for handhelds and NVIDIA graphics. The [spec](docs/spec.md#phase-3-ready-for-games) lists the work
-   packages.
+   ([#7](https://github.com/Tim-van-Oudheusden/pindu-os/issues/7)), and see a console refuse an unsigned image
+   ([#5](https://github.com/Tim-van-Oudheusden/pindu-os/issues/5)).
+3. **Ready for games.** Pindu launcher 0.5.0 in `:stable`, which installs Steam, Heroic or Lutris from Flathub
+   ([pindu-launcher#378](https://github.com/Tim-van-Oudheusden/pindu-launcher/issues/378)) and runs games in front of
+   it in a gamescope session. Renovate brings each launcher release into `:testing`, and it reaches `:stable` once its
+   hardware check passes ([decision 0012](docs/decisions/0012-launcher-releases.md)). Then the launcher speaking
+   gamescope's window protocol for Steam games
+   ([pindu-launcher#377](https://github.com/Tim-van-Oudheusden/pindu-launcher/issues/377)), a boot splash, and variants
+   for handhelds and NVIDIA graphics. The [spec](docs/spec.md#phase-3-ready-for-games) lists the work packages.
 
 ## Contributing
 
