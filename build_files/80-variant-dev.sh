@@ -16,12 +16,14 @@ packages=(
     NetworkManager-tui
 
     # Graphics and input diagnosis: vulkaninfo, lspci, lsusb, evtest and libinput's tools
-    # answer "why does gamescope not start" and "why does this controller do nothing".
+    # answer "why does gamescope not start" and "why does this controller do nothing";
+    # vainfo lists what the GPU decodes in hardware.
     vulkan-tools
     pciutils
     usbutils
     evtest
     libinput-utils
+    libva-utils
 
     # secret-tool, to inspect the Secret Service keyring the launcher uses.
     libsecret
