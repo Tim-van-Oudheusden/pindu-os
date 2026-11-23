@@ -4,8 +4,10 @@ set -euo pipefail
 # shellcheck source=tests/container/lib.sh
 source /tests/lib.sh
 
-check_eq "pindu-launcher is version ${LAUNCHER_VERSION}" \
-    "${LAUNCHER_VERSION}" "$(rpm -q --qf '%{VERSION}' pindu-launcher)"
+# A pre-release pin is spelled as its tag (0.7.0-rc.1); its package version is 0.7.0~rc1.
+expected=${LAUNCHER_VERSION/-rc./\~rc}
+check_eq "pindu-launcher is version ${expected}" \
+    "${expected}" "$(rpm -q --qf '%{VERSION}' pindu-launcher)"
 
 unresolved=$(ldd /usr/bin/pindu-launcher | grep 'not found' || true)
 check_eq "ldd reports no missing library" "" "${unresolved}"

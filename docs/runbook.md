@@ -158,6 +158,11 @@ Renovate opens the pull requests that change `image.env` and the action SHAs, an
 To bump the launcher by hand, set `LAUNCHER_VERSION` and `LAUNCHER_SHA256` (the `sha256` of
 `pindu-launcher-<version>-1.fc45.x86_64.rpm`, shown on the release page) and run `just verify-inputs`.
 
+To try a launcher pre-release on a device, pin it by hand the same way, with the version as the tag spells it
+(`LAUNCHER_VERSION=0.7.0-rc.1`); the build and the launcher test compare it with the package's own spelling,
+`0.7.0~rc1`. Once merged, `:testing` carries the pre-release, and the launcher gate refuses every promotion to `:stable`
+until a final release replaces the pin, including base image and kernel updates. Replace it as soon as the final ships.
+
 ### Moving to a new Fedora release
 
 This is manual, because four things move together. The launcher must already build an RPM for the new release.
