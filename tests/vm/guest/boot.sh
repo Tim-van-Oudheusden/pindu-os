@@ -123,6 +123,37 @@ for action in "${admin_only[@]}"; do
         --detail origin flathub --detail remote flathub --detail ref "${steam}"
 done
 
+# Store links (issue #60): Play and Open Steam hand steam:// links to GLib in the launcher's
+# process, which finds the handler that the system installation exports. Stand in for an
+# installed Steam with an entry that records the link it gets, run flatpak's desktop-database
+# trigger as an install does, and open a link as pindu with the launcher's environment.
+check "the launcher's data folders include the system installation's exports" \
+    grep -qx /var/lib/flatpak/exports/share \
+    <(tr '\0' '\n' <"/proc/${launcher}/environ" | sed -n 's/^XDG_DATA_DIRS=//p' | tr ':' '\n' | sed 's|/$||')
+link_opened=/run/user/1000/pindu-test-link
+cat >/run/pindu-test-handler <<EOF
+#!/usr/bin/sh
+echo "\$1" >${link_opened}
+EOF
+chmod 0755 /run/pindu-test-handler
+applications=/var/lib/flatpak/exports/share/applications
+mkdir -p "${applications}"
+cat >"${applications}/com.valvesoftware.Steam.desktop" <<'EOF'
+[Desktop Entry]
+Type=Application
+Name=Steam
+Exec=/run/pindu-test-handler %u
+MimeType=x-scheme-handler/steam;
+EOF
+/usr/share/flatpak/triggers/desktop-database.trigger /var/lib/flatpak
+mapfile -d '' launcher_env <"/proc/${launcher}/environ"
+as_pindu env --ignore-environment "${launcher_env[@]}" gio open steam://open/bigpicture >/dev/null 2>&1 || true
+wait_for 10 test -s "${link_opened}"
+check "a steam:// link from the launcher's environment opens the exported Steam entry" \
+    test "$(cat "${link_opened}" 2>/dev/null)" = steam://open/bigpicture
+rm -f "${applications}/com.valvesoftware.Steam.desktop" /run/pindu-test-handler "${link_opened}"
+/usr/share/flatpak/triggers/desktop-database.trigger /var/lib/flatpak
+
 # An installed system (tests/vm/install.sh) must update from the registry, signatures enforced.
 if [[ -n ${PINDU_TEST_EXPECT_IMAGE:-} ]]; then
     check "updates come from ${PINDU_TEST_EXPECT_IMAGE}" \

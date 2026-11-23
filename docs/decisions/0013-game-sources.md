@@ -32,6 +32,12 @@ Stores are Flatpaks from Flathub, installed on request into the system installat
 - `pindu-os-flatpak-update.timer` runs `flatpak update --system --noninteractive` 30 minutes after boot and every
   12 hours, at idle CPU and I/O priority, once the installation exists. A running app keeps its version until it
   starts again.
+- Store links (issue #60): Play hands a store game to its store as a link (`steam://rungameid/…`,
+  `heroic://launch?…`, `lutris:rungameid/…`), and Open Steam sends `steam://open/bigpicture`. GLib finds the app for
+  a link scheme through `mimeinfo.cache` in `/var/lib/flatpak/exports/share/applications`. flatpak's
+  `desktop-database` trigger writes that file after each app install, update or removal, by running the host's
+  `update-desktop-database`, so `desktop-file-utils` is in the image (`40-session-packages.sh`). flatpak's user
+  environment generator already puts the exports in the session's `XDG_DATA_DIRS`.
 - Controllers: `steam-devices`, from Fedora's own repositories, was already in the image. Its udev rules give the
   logged-in user Valve's and other controllers' HID nodes and `uinput`, which Flatpak Steam needs from the host.
 - MangoHud and GameMode stay RPMs (`40-session-packages.sh`): games outside Flatpak use them directly, and Flatpak
@@ -66,8 +72,11 @@ Stores are Flatpaks from Flathub, installed on request into the system installat
   change the remote on devices that already have it, and a remote the user removed is not added back.
 - MangoHud inside Flatpak games needs Flathub's `org.freedesktop.Platform.VulkanLayer.MangoHud` extension; the host
   RPM does not reach the sandbox.
+- A console that installed a store before `desktop-file-utils` was in the image has no `mimeinfo.cache` until flatpak
+  next installs, updates or removes an app there; its store links fail until then.
 - `tests/container/flatpak.sh` checks the remote, the key, the disabled Fedora unit across the first-boot presets,
-  the controller rules and the update units. `tests/vm/guest/boot.sh` checks that `pindu` sees `flathub` and asks
-  polkit about each Flatpak action from the launcher's process.
+  the controller rules, the update units, and that a `steam://` link opens the app an install exports for it.
+  `tests/vm/guest/boot.sh` checks that `pindu` sees `flathub`, asks polkit about each Flatpak action from the
+  launcher's process, and opens a `steam://` link with the launcher's environment.
 - Revisit when the launcher offers uninstalling, when a store needs a remote other than Flathub, or when a variant
   (handheld, spec OS-21) ships a store preinstalled.

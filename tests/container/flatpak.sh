@@ -46,4 +46,37 @@ check_eq "the update service updates the system installation without asking" \
     "$(systemctl cat "${service}" | grep '^ExecStart=')"
 check "the units pass systemd's checks" systemd-analyze verify "${service}" pindu-os-flatpak-update.timer
 
+# Store links (issue #60). Play and Open Steam hand steam://, heroic:// and lutris: links to
+# GLib, which finds their handler through mimeinfo.cache in the installation's exports.
+# flatpak writes that file after every app install with its desktop-database trigger, which
+# does nothing without the host's update-desktop-database. Stand in for an installed Steam
+# with an exported entry that records the link it gets, run the trigger as flatpak does, and
+# open a link with the data folders the user manager gives the session (flatpak's environment
+# generator; tests/vm/guest/boot.sh checks the launcher's own environment).
+work=$(mktemp -d)
+cat >"${work}/handler" <<EOF
+#!/usr/bin/sh
+echo "\$1" >${work}/opened
+EOF
+chmod +x "${work}/handler"
+applications=/var/lib/flatpak/exports/share/applications
+mkdir -p "${applications}"
+cat >"${applications}/com.valvesoftware.Steam.desktop" <<EOF
+[Desktop Entry]
+Type=Application
+Name=Steam
+Exec=${work}/handler %u
+MimeType=x-scheme-handler/steam;
+EOF
+/usr/share/flatpak/triggers/desktop-database.trigger /var/lib/flatpak
+data_dirs=$(/usr/lib/systemd/user-environment-generators/60-flatpak | sed -n 's/^XDG_DATA_DIRS=//p')
+XDG_DATA_DIRS=${data_dirs} gio open steam://open/bigpicture >/dev/null 2>&1 || true
+for _ in {1..50}; do
+    [[ -s ${work}/opened ]] && break
+    sleep 0.1
+done
+check_eq "a steam:// link opens the app that the system installation exports for it" \
+    steam://open/bigpicture "$(cat "${work}/opened" 2>/dev/null)"
+rm -rf "${work}"
+
 finish

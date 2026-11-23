@@ -50,6 +50,12 @@ packages=(
     # Game stores. The launcher's "add a store" flow installs Steam, Heroic or Lutris from
     # Flathub into the system installation (docs/decisions/0013-game-sources.md).
     flatpak
+
+    # Store links. Play hands a store game to its store as a steam://, heroic:// or lutris:
+    # link, which GLib resolves through mimeinfo.cache in the installation's exports. flatpak
+    # writes that file after an app install by running update-desktop-database from the host,
+    # and skips the step when it is missing.
+    desktop-file-utils
 )
 
 if [[ ${1:-} == --list ]]; then
