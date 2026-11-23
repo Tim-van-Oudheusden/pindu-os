@@ -21,7 +21,10 @@
 # bootc-image-builder adds the command that installs the image embedded in the ISO. The
 # %post step then points the installed system at the registry, so updates come from the
 # stable channel of the same image (pindu-os or pindu-os-dev, read from its os-release) and
-# must carry our signature.
+# must carry our signature. It also drops the line for / that Anaconda writes to /etc/fstab:
+# / is ostree's read-only composefs mount, made from the root= and rootflags= kernel
+# arguments, and systemd-remount-fs.service fails on every boot when it tries to remount it
+# with that line's options (issue #53). A disk image from bootc-image-builder has no such line.
 #
 # `just lint` runs shellcheck on the %pre script.
 [customizations.installer.kickstart]
@@ -153,6 +156,7 @@ EOF
 %post --erroronfail
 . /usr/lib/os-release
 bootc switch --mutate-in-place --enforce-container-sigpolicy --transport registry "ghcr.io/tim-van-oudheusden/${IMAGE_ID}:stable"
+sed -i -E '/^[[:space:]]*[^#[:space:]]+[[:space:]]+\/[[:space:]]/d' /etc/fstab
 %end
 '''
 
