@@ -12,9 +12,11 @@ fi
 
 dnf -y install --setopt=install_weak_deps=False "${rpms[0]}"
 
+# A pre-release pin is spelled as its tag (0.7.0-rc.1); its package version is 0.7.0~rc1.
+expected=${LAUNCHER_VERSION/-rc./\~rc}
 installed=$(rpm -q --qf '%{VERSION}' pindu-launcher)
-if [[ ${installed} != "${LAUNCHER_VERSION}" ]]; then
-    echo "ERROR: pindu-launcher ${installed} is installed, LAUNCHER_VERSION is ${LAUNCHER_VERSION}" >&2
+if [[ ${installed} != "${expected}" ]]; then
+    echo "ERROR: pindu-launcher ${installed} is installed, LAUNCHER_VERSION ${LAUNCHER_VERSION} wants ${expected}" >&2
     exit 1
 fi
 
