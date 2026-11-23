@@ -131,6 +131,12 @@ if [[ -n ${PINDU_TEST_EXPECT_IMAGE:-} ]]; then
         test "$(bootc status --json | jq -r '.spec.image.signature')" = containerPolicy
 fi
 
+# No system unit may fail on boot (issue #53): each one prints a [FAILED] line on the console,
+# and the degraded state it leaves hides the next real failure. The boot has to finish first.
+systemctl is-system-running --wait >/dev/null 2>&1 || true
+failed_units=$(systemctl list-units --state=failed --plain --no-legend --no-pager | cut -d ' ' -f 1 | paste -sd ' ')
+check "no system unit has failed${failed_units:+ (failed: ${failed_units})}" test -z "${failed_units}"
+
 # A session that ends comes back by itself (decision 0004). Kill the launcher, as a crash
 # would: the compositor exits, the unit fails, and greetd must log pindu in again in a new
 # session of class "user" that starts the unit and the launcher once more.
