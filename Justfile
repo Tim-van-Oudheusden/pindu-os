@@ -115,9 +115,11 @@ lint:
     mapfile -t scripts < <(git ls-files --cached --others --exclude-standard -- '*.sh' system_files/usr/bin)
     run "${SHELLCHECK_IMAGE}" --external-sources "${scripts[@]}"
 
-    echo "== shellcheck: the %pre script of disk_config/iso.toml"
-    awk '/^%end/ { pre = 0 } pre; /^%pre/ { pre = 1 }' disk_config/iso.toml |
-        run --interactive "${SHELLCHECK_IMAGE}" --shell=bash -
+    for section in %pre %post; do
+        echo "== shellcheck: the bash ${section} script of disk_config/iso.toml"
+        awk -v section="${section}" '/^%end/ { on = 0 } on; $1 == section && /--interpreter=\/usr\/bin\/bash/ { on = 1 }' \
+            disk_config/iso.toml | run --interactive "${SHELLCHECK_IMAGE}" --shell=bash -
+    done
 
     echo "== hadolint"
     run "${HADOLINT_IMAGE}" hadolint Containerfile

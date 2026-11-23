@@ -57,8 +57,8 @@ Replace `/dev/sdX` with the stick. `dd` overwrites whatever you point it at.
      the disk as it was.
    - **No disk, or more than one:** it says so and lists the disks it found. Press Enter to turn the PC off. Nothing
      is written to any disk.
-4. After `erase` it installs and restarts the PC by itself. It takes five to ten minutes.
-5. Remove the USB stick when the PC restarts.
+4. After `erase` it installs, which takes five to ten minutes, and then says that Pindu OS is installed.
+5. Remove the USB stick, then press Enter. The PC restarts.
 
 The PC then boots straight into the launcher: there is no login and no password. Connect a controller with a cable,
 then pair wireless controllers and headsets with it in Quick Access (right stick click), **Bluetooth**.
@@ -82,8 +82,9 @@ systemd.set_credential=pindu.install.confirm:nvme0n1
 ```
 
 then press Ctrl+X. A VM can pass the same credential over SMBIOS (`tests/vm/install.sh` does). The installer still
-shows the disk, then installs without asking. It still refuses a PC with more than one disk, and a credential that
-names a different disk turns the PC off without changes. Nothing sets this credential by default.
+shows the disk, then installs without asking, and restarts the PC when it is done without waiting for Enter. It still
+refuses a PC with more than one disk, and a credential that names a different disk turns the PC off without changes.
+Nothing sets this credential by default.
 
 ## Wi-Fi
 
