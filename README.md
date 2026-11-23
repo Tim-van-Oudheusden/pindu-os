@@ -89,7 +89,7 @@ to download; `just build-iso` builds one from this repository.
 2. Write it to the USB stick.
 3. Start the PC from the stick, check the disk it shows, type `erase` and press Enter. It installs in five to ten
    minutes.
-4. Remove the stick when the PC restarts. It boots straight into the launcher.
+4. When it says Pindu OS is installed, remove the stick and press Enter. The PC restarts straight into the launcher.
 
 The [install guide](docs/install.md) has every step in full, and covers updates, rollback, the dev image and
 [trying it in a virtual machine](docs/install.md#try-it-in-a-virtual-machine).

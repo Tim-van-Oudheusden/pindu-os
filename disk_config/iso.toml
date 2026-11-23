@@ -23,7 +23,12 @@
 # stable channel of the same image (pindu-os or pindu-os-dev, read from its os-release) and
 # must carry our signature.
 #
-# `just lint` runs shellcheck on the %pre script.
+# When the install is done, the last %post step says so and waits for Enter before the PC
+# restarts, so the user can remove the USB stick first: a stick is not ejected, and a
+# firmware that tries USB first would start the installer again. An unattended installation
+# restarts without waiting. Both report "pindu-install: installed".
+#
+# `just lint` runs shellcheck on the bash %pre and %post scripts.
 [customizations.installer.kickstart]
 contents = '''
 text --non-interactive
@@ -153,6 +158,25 @@ EOF
 %post --erroronfail
 . /usr/lib/os-release
 bootc switch --mutate-in-place --enforce-container-sigpolicy --transport registry "ghcr.io/tim-van-oudheusden/${IMAGE_ID}:stable"
+%end
+
+%post --nochroot --interpreter=/usr/bin/bash
+set -euo pipefail
+
+if [[ -c /dev/ttyS0 ]]; then
+    { echo "pindu-install: installed" >/dev/ttyS0; } 2>/dev/null || true
+fi
+[[ -e /run/credentials/@system/pindu.install.confirm ]] && exit 0
+
+exec </dev/tty6 >/dev/tty6
+chvt 6
+printf '\033[2J\033[H'
+echo "Pindu OS installer"
+echo
+echo "Pindu OS is installed."
+echo
+echo "Remove the USB stick, then press Enter to restart the PC."
+read -r _ || true
 %end
 '''
 
