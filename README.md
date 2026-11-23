@@ -51,8 +51,11 @@ back the same way.
   every input is prebuilt and pinned in [`image.env`](image.env), so a diff of that file explains any change in the
   image.
 
-Not there yet: NVIDIA graphics and a variant for handhelds. No game store is preinstalled: the image ships Flatpak
-with Flathub as its system remote, and Pindu launcher installs Steam, Heroic or Lutris from it with Add a Store, from
+Not there yet: NVIDIA graphics, a variant for handhelds, and 32-bit Windows games added with the launcher's Add Game.
+The image ships [umu-launcher](https://github.com/Open-Wine-Components/umu-launcher), which runs the Windows games
+the launcher starts itself, but no 32-bit graphics drivers for it
+([decision 0013](docs/decisions/0013-game-sources.md)). No game store is preinstalled: the image ships Flatpak with
+Flathub as its system remote, and Pindu launcher installs Steam, Heroic or Lutris from it with Add a Store, from
 launcher 0.5.0 on. [`image.env`](image.env) names the launcher version the image carries. The [roadmap](#roadmap) says
 what comes next.
 
@@ -111,7 +114,7 @@ flowchart TB
 ```
 
 - **Built from pinned inputs.** The image is Fedora's bootc base image plus a package list, the launcher's release
-  RPM, a session script and a handful of configuration files.
+  RPM, umu-launcher's release zipapp, a session script and a handful of configuration files.
 - **Tested before it is published.** Every change is linted, built and checked from inside the image, then booted in
   QEMU, where the tests assert on the running session.
 - **Booted in one line.** systemd starts [greetd](https://sr.ht/~kennylevinsen/greetd/), which logs the `pindu` user

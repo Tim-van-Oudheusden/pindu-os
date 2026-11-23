@@ -153,6 +153,7 @@ Renovate opens the pull requests that change `image.env` and the action SHAs, an
 - base image, akmods and bootc-image-builder digests: one grouped pull request a week
 - the launcher: on each final launcher release, version and SHA-256 together. Pre-releases (`vX.Y.Z-rc.N`) are
   ignored; they soak in the launcher repository ([decision 0012](decisions/0012-launcher-releases.md))
+- umu-launcher: on each release, version and SHA-256 of its zipapp together
 - tools and GitHub Actions: as they are released
 
 To bump the launcher by hand, set `LAUNCHER_VERSION` and `LAUNCHER_SHA256` (the `sha256` of

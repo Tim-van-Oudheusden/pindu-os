@@ -3,10 +3,10 @@
 # each (GitHub folds `::group::` blocks). 80-variant-<name>.sh runs only for that variant.
 #
 # Inputs are the Containerfile's build arguments, which reach the scripts as environment
-# variables: FEDORA_VERSION, LAUNCHER_VERSION, KERNEL_FLAVOR, VARIANT, IMAGE_VERSION.
+# variables: FEDORA_VERSION, LAUNCHER_VERSION, UMU_VERSION, KERNEL_FLAVOR, VARIANT, IMAGE_VERSION.
 set -euo pipefail
 
-: "${FEDORA_VERSION:?}" "${LAUNCHER_VERSION:?}" "${KERNEL_FLAVOR:?}" "${VARIANT:?}" "${IMAGE_VERSION:?}"
+: "${FEDORA_VERSION:?}" "${LAUNCHER_VERSION:?}" "${UMU_VERSION:?}" "${KERNEL_FLAVOR:?}" "${VARIANT:?}" "${IMAGE_VERSION:?}"
 
 case "${VARIANT}" in
 prod | dev) ;;

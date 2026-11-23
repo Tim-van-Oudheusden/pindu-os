@@ -26,6 +26,17 @@
       currentValueTemplate: "v{{{version}}}",
       autoReplaceStringTemplate: "LAUNCHER_VERSION={{{replace '^v' '' newValue}}}\nLAUNCHER_SHA256={{{newDigest}}}",
     },
+    {
+      // umu-launcher's zipapp: the release version and the SHA-256 of the release attachment.
+      // The release tag is the version itself (1.4.4), as image.env holds it.
+      customType: "regex",
+      managerFilePatterns: ["/^image\\.env$/"],
+      matchStrings: [
+        "(?m)^UMU_VERSION=(?<currentValue>\\S+)\\n+UMU_SHA256=(?<currentDigest>[a-f0-9]{64})$",
+      ],
+      depNameTemplate: "Open-Wine-Components/umu-launcher",
+      datasourceTemplate: "github-release-attachments",
+    },
     // `just-version` and `cosign-release` in the workflows need no manager here: Renovate's
     // github-actions manager reads the version inputs of setup-just and cosign-installer.
   ],
