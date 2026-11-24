@@ -56,8 +56,10 @@ The image ships [umu-launcher](https://github.com/Open-Wine-Components/umu-launc
 the launcher starts itself, but no 32-bit graphics drivers for it
 ([decision 0013](docs/decisions/0013-game-sources.md)). No game store is preinstalled: the image ships Flatpak with
 Flathub as its system remote, and Pindu launcher installs Steam, Heroic or Lutris from it with Add a Store, from
-launcher 0.5.0 on. [`image.env`](image.env) names the launcher version the image carries. The [roadmap](#roadmap) says
-what comes next.
+launcher 0.5.0 on. Steam's Switch to Desktop is meant to bring the launcher back with Steam still running; until a
+launcher release has the action it calls
+([pindu-launcher#836](https://github.com/Tim-van-Oudheusden/pindu-launcher/issues/836)), it closes Steam instead.
+[`image.env`](image.env) names the launcher version the image carries. The [roadmap](#roadmap) says what comes next.
 
 ## Images
 

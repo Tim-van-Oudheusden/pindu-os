@@ -155,6 +155,14 @@ into the system installation ([decision 0013](decisions/0013-game-sources.md)):
   it talk to NetworkManager (so it shows its connection) and the login service (so its Restart and Shut Down work).
   flatpak reads system overrides only from `/var/lib/flatpak/overrides`; `tmpfiles.d/pindu.conf` links the image's
   file there on every boot, before Steam is installed.
+- **Steam's Switch to Desktop** runs `steamos-session-select`, which Steam's sandbox does not have. Pindu OS's,
+  [`/usr/libexec/pindu-os/steam/steamos-session-select`](../system_files/usr/libexec/pindu-os/steam/steamos-session-select),
+  asks the launcher over the session bus to leave Big Picture and come to the front, with Steam left running
+  (application action `leave-big-picture` on `io.github.tim_van_oudheusden.pindu-launcher`, from pindu-launcher#836),
+  and runs `steam -shutdown` when the launcher does not answer. A sandbox cannot see the image's `/usr`, so
+  `tmpfiles.d/pindu.conf` copies the folder to `/var/lib/pindu-os/steam` on every boot (`R` then `C`, so the copy
+  follows image updates). Steam's override hands the sandbox that folder read-only, puts it first in `PATH` (followed
+  by the manifest's own `/app/bin:/app/utils/bin:/usr/bin`) and lets it talk to the launcher's bus name.
 
 ## Updates and trust
 
@@ -202,7 +210,9 @@ signature policy and the agent instructions.
   package lists, the launcher's version and libraries, the session script against stub compositors (fallback after two
   failed gamescope starts, none when gamescope stays up, the 1080-line render size), the user and autologin
   configuration, the variant's access rules, the signature policy, the update units, and the Flatpak remote, the
-  disabled Fedora remote unit, Steam's override, the controller rules and the Flatpak update units.
+  disabled Fedora remote unit, Steam's override, the controller rules and the Flatpak update units, and Steam's
+  `steamos-session-select` (where the boot puts it, the `PATH` that finds it, and against stub `gdbus` and `steam`:
+  the launcher called when it is on the bus, Steam closed when it is not or lacks the action).
 - **Workflow script tests** ([`tests/ci/`](../tests/ci)) run on the host with `just test-ci`: the promote gate
   against a stub registry and stub launcher issues, with `image.env` from a scratch git repository.
 - **VM tests** ([`tests/vm/`](../tests/vm)) boot real disk images in QEMU with KVM and UEFI firmware. The assertions
@@ -212,8 +222,8 @@ signature policy and the agent instructions.
   - `boot.sh`: a `pindu` session on seat0 within 60 seconds of boot, a locked password, `pindu-session.service`
     active, a `pindu-launcher` process, sound, a portal that answers, a keyring that opens without a prompt, polkit's
     answers for the system panel and for installing from Flathub, `flathub` in `pindu`'s view of the system
-    installation, Steam's override, and a screenshot that is not blank. With `--ssh` (dev image): SSH with an injected
-    key, and sudo.
+    installation, Steam's override and `steamos-session-select`, the launcher answering on the bus name and path the
+    script calls, and a screenshot that is not blank. With `--ssh` (dev image): SSH with an injected key, and sudo.
   - `update.sh`: four boots. The guest switches to the image as served by a local registry, the host pushes a newer
     one, the update service stages it without a reboot, the next boot runs it, and `bootc rollback` returns.
   - `install.sh`: three installer runs. With two empty disks the installer must refuse and write nothing; with one disk

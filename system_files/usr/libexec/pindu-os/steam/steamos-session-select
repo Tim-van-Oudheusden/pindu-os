@@ -1,0 +1,46 @@
+#!/usr/bin/bash
+# steamos-session-select: what Steam's Switch to Desktop entry runs, on Pindu OS.
+#
+# Under gamescope Steam shows its console interface, whose menu has Switch to Desktop in place
+# of Exit Big Picture. Pindu OS has no desktop: here the entry means "back to Pindu", with Steam
+# left running so its downloads continue. Steam runs this inside its Flatpak sandbox, which
+# finds it through the PATH that Steam's system-wide override sets
+# (docs/decisions/0013-game-sources.md, issue #69).
+#
+# It asks Pindu launcher, over the session bus, to end its Big Picture session and come back to
+# the front. When the launcher does not answer (not on the bus, too old to have the action,
+# hung), it closes Steam instead, which ends Big Picture too. Steam passes the session it wants
+# ("desktop", "plasma", ...); there is one session here, so the argument is ignored. It never
+# fails: a failure here would only show as an entry that does nothing.
+set -euo pipefail
+
+readonly LAUNCHER=io.github.tim_van_oudheusden.pindu-launcher
+readonly LAUNCHER_PATH=/io/github/tim_van_oudheusden/pindu_launcher
+# The application action pindu-launcher#836 adds.
+readonly ACTION=leave-big-picture
+# Seconds to wait for each answer from the bus.
+readonly TIMEOUT=5
+
+log() {
+    echo "steamos-session-select: $*" >&2
+}
+
+# The launcher is D-Bus activatable. Ask whether it runs first, so that a call never starts a
+# second one.
+launcher_running() {
+    [[ $(gdbus call --session --timeout "${TIMEOUT}" --dest org.freedesktop.DBus \
+        --object-path /org/freedesktop/DBus --method org.freedesktop.DBus.NameHasOwner "${LAUNCHER}") == "(true,)" ]]
+}
+
+back_to_launcher() {
+    launcher_running &&
+        gdbus call --session --timeout "${TIMEOUT}" --dest "${LAUNCHER}" --object-path "${LAUNCHER_PATH}" \
+            --method org.freedesktop.Application.ActivateAction "${ACTION}" '[]' '{}' >/dev/null
+}
+
+if back_to_launcher; then
+    exit 0
+fi
+log "Pindu launcher did not answer; closing Steam instead"
+steam -shutdown || log "steam -shutdown failed with status $?"
+exit 0
