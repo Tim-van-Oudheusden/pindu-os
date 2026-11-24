@@ -1,11 +1,17 @@
 # Updates the apps and runtimes in the system installation, where the launcher's "add a
-# store" flow installs from Flathub. A running app keeps its old version until it is started
-# again, so an update never interrupts a game; it runs at idle priority so it does not slow
-# one down either (docs/decisions/0013-game-sources.md).
+# store" flow and Get Games install from Flathub. A running app keeps its old version until it
+# is started again, so an update never interrupts a game; it runs at idle priority so it does
+# not slow one down either (docs/decisions/0013-game-sources.md).
+#
+# Then removes the runtimes and extensions no installed app uses any more, such as the one a
+# game removed in Get Games leaves behind, so the launcher needs no right to do that itself
+# (docs/decisions/0015-get-games.md). It runs after the update, which can make an older
+# runtime branch unused.
 
 [Unit]
-Description=Update Flatpak apps
+Description=Update Flatpak apps and remove unused runtimes
 Documentation=https://github.com/Tim-van-Oudheusden/pindu-os/blob/main/docs/decisions/0013-game-sources.md
+Documentation=https://github.com/Tim-van-Oudheusden/pindu-os/blob/main/docs/decisions/0015-get-games.md
 Wants=network-online.target
 After=network-online.target
 # Nothing is installed before the launcher first uses the installation.
@@ -16,3 +22,4 @@ Type=oneshot
 Nice=19
 IOSchedulingClass=idle
 ExecStart=/usr/bin/flatpak update --system --noninteractive
+ExecStart=/usr/bin/flatpak uninstall --system --unused --noninteractive
