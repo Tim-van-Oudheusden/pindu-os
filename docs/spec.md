@@ -248,6 +248,7 @@ These are named so nothing above blocks them. Each needs its own short spec befo
 | OS-19 | chunkah layering for smaller update downloads | As Armada's final stage |
 | OS-20 | Boot splash and branding | Plymouth theme, os-release, installer artwork |
 | OS-21 | Variants: handheld (InputPlumber), NVIDIA | Build arguments on the same Containerfile |
+| OS-22 | What the image allows and ships for the launcher's Get Games: uninstalling Flatpaks, removing unused runtimes, the console's lists ([decision 0015](decisions/0015-get-games.md)) | The launcher does the work (its GG-1 to GG-6); no new package |
 
 ### Rules that go into `AGENTS.md`
 
