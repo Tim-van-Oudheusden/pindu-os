@@ -1,6 +1,7 @@
 # 0013: Game sources
 
-Status: accepted (2026-11-17), settles spec OS-17 (issue #29); amended 2026-11-23 for umu-launcher (issue #59)
+Status: accepted (2026-11-17), settles spec OS-17 (issue #29); amended 2026-11-23 for umu-launcher (issue #59); the
+polkit rule and the update service changed in [0015](0015-get-games.md)
 
 ## Context
 
@@ -33,7 +34,8 @@ umu-launcher comes from its own release, pinned like the launcher.
   update apps and runtimes whose origin is `flathub` (`org.freedesktop.Flatpak.app-install`, `runtime-install`,
   `app-update`, `runtime-update`). Fedora's defaults already allow the active session to update, refresh remotes and
   maintain the repository. Installing from any other remote, uninstalling, installing bundles and adding or changing
-  remotes still need an administrator, which the console does not have.
+  remotes still need an administrator, which the console does not have. [0015](0015-get-games.md) adds uninstalling
+  apps and runtimes, for the launcher's Get Games.
 - `pindu-os-flatpak-update.timer` runs `flatpak update --system --noninteractive` 30 minutes after boot and every
   12 hours, at idle CPU and I/O priority, once the installation exists. A running app keeps its version until it
   starts again.
@@ -93,7 +95,8 @@ umu-launcher comes from its own release, pinned like the launcher.
 - The console needs network on first use of a store; installing Steam downloads its runtime and the 32-bit GL
   extensions, a few gigabytes.
 - `pindu` can fill the disk with Flathub apps without a password. It cannot remove them without an administrator; the
-  launcher needs `app-uninstall` granted the same way when it offers that.
+  launcher needs `app-uninstall` granted the same way when it offers that. [0015](0015-get-games.md) grants it, and the
+  update service now also removes unused runtimes.
 - flatpak applies `remotes.d` once per installation: a later image with a changed `flathub.flatpakrepo` does not
   change the remote on devices that already have it, and a remote the user removed is not added back.
 - The first Windows game that umu starts downloads the Steam Linux Runtime and a Proton build into `pindu`'s home, so

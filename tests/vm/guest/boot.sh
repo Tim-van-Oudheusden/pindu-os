@@ -102,26 +102,49 @@ check_not "systemd refuses pindu to start another system unit" \
 check "pindu sees flathub in the system installation" \
     test "$(as_pindu systemd-run --user --quiet --wait --pipe -- flatpak remotes --system --columns=name)" = flathub
 steam=app/com.valvesoftware.Steam/x86_64/stable
+runtime=runtime/org.freedesktop.Platform/x86_64/25.08
 for action in app-install runtime-install app-update runtime-update; do
     check "polkit allows the launcher ${action} from flathub" \
         pkcheck --action-id "org.freedesktop.Flatpak.${action}" --process "${launcher}" \
         --detail origin flathub --detail ref "${steam}"
 done
+# Get Games (issue #66): Remove uninstalls an app, and its runtime when nothing else uses it.
+# On Uninstall the helper passes only the ref (or the app's name), no remote.
+check "polkit allows the launcher app-uninstall" \
+    pkcheck --action-id org.freedesktop.Flatpak.app-uninstall --process "${launcher}" --detail ref "${steam}"
+check "polkit allows the launcher runtime-uninstall" \
+    pkcheck --action-id org.freedesktop.Flatpak.runtime-uninstall --process "${launcher}" --detail ref "${runtime}"
+# Get Games reads Flathub's catalogue from the system installation and downloads it when it is
+# missing. Do what the launcher does, as pindu from its user manager and with no polkit agent:
+# it succeeds only if nothing asks for a password.
+check "polkit allows the launcher appstream-update from flathub" \
+    pkcheck --action-id org.freedesktop.Flatpak.appstream-update --process "${launcher}" \
+    --detail origin flathub --detail arch x86_64
+check "pindu downloads Flathub's catalogue into the system installation without a prompt" \
+    as_pindu systemd-run --user --quiet --wait --pipe --property=RuntimeMaxSec=300 -- \
+    flatpak update --appstream --system --noninteractive
+check "the catalogue is where Get Games reads it" \
+    test -d /var/lib/flatpak/appstream/flathub/x86_64/active
 # flatpak's own rule (org.freedesktop.Flatpak.rules) lets an active local wheel member install
-# from any remote and uninstall without a password. The dev image puts pindu in wheel
-# (build_files/80-variant-dev.sh); the production image does not, and there they stay refused.
+# from any remote without a password. The dev image puts pindu in wheel
+# (build_files/80-variant-dev.sh); the production image does not, and there it stays refused.
+# Adding or changing a remote (configure-remote), installing a bundle and changing the
+# installation's configuration stay refused in both.
 admin_only=(install-bundle configure-remote configure)
 if ! id -nG pindu | grep -qw wheel; then
     check_not "polkit refuses the launcher app-install from another remote" \
         pkcheck --action-id org.freedesktop.Flatpak.app-install --process "${launcher}" \
         --detail origin fedora --detail ref "${steam}"
-    admin_only+=(app-uninstall runtime-uninstall)
 fi
 for action in "${admin_only[@]}"; do
     check_not "polkit refuses the launcher org.freedesktop.Flatpak.${action}" \
         pkcheck --action-id "org.freedesktop.Flatpak.${action}" --process "${launcher}" \
         --detail origin flathub --detail remote flathub --detail ref "${steam}"
 done
+as_pindu systemd-run --user --quiet --wait --pipe --property=RuntimeMaxSec=60 -- \
+    flatpak remote-add --system --no-gpg-verify pindu-test https://example.invalid/repo/ >/dev/null 2>&1 || true
+check "pindu cannot add a remote to the system installation" \
+    test "$(flatpak remotes --system --show-disabled --columns=name)" = flathub
 
 # Store links (issue #60): Play and Open Steam hand steam:// links to GLib in the launcher's
 # process, which finds the handler that the system installation exports. Stand in for an
