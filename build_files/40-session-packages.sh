@@ -41,6 +41,12 @@ packages=(
     # Media. GTK plays the launcher's animated Home background, a WebM file with VP9 video,
     # through GStreamer; the Matroska demuxer and the VP9 decoder are in plugins-good.
     gstreamer1-plugins-good
+    # Hardware decoding of that background. plugins-bad-free has GStreamer's VA plug-in, whose
+    # decoders (vavp9dec) outrank the software ones wherever the GPU decodes the format. Mesa's
+    # VA driver for AMD comes with mesa-dri-drivers (30-base-packages.sh); the Intel one, for
+    # Broadwell and later, is libva-intel-media-driver.
+    gstreamer1-plugins-bad-free
+    libva-intel-media-driver
 
     # Game helpers. Games and launchers switch MangoHud's overlay and GameMode's performance
     # tweaks on themselves; pindu-launcher recommends gamemode.
