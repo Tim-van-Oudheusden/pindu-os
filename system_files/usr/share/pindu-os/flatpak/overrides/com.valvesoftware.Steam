@@ -8,6 +8,20 @@
 # pindu (50-pindu-os.rules and Fedora's defaults).
 # login1: Steam's Restart and Shut Down entries ask the login service, which polkit already lets
 # pindu's active session power off, reboot and suspend.
+#
+# Switch to Desktop runs steamos-session-select, which the sandbox does not have. tmpfiles.d
+# copies Pindu OS's into /var/lib/pindu-os/steam; the sandbox gets that folder read-only, first
+# in PATH (the rest is the PATH Steam's manifest sets), and may call the launcher, whose action
+# brings it back to the front.
 [System Bus Policy]
 org.freedesktop.NetworkManager=talk
 org.freedesktop.login1=talk
+
+[Session Bus Policy]
+io.github.tim_van_oudheusden.pindu-launcher=talk
+
+[Context]
+filesystems=/var/lib/pindu-os/steam:ro;
+
+[Environment]
+PATH=/var/lib/pindu-os/steam:/app/bin:/app/utils/bin:/usr/bin

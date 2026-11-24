@@ -59,8 +59,10 @@ Flathub as its system remote, and Pindu launcher installs Steam, Heroic or Lutri
 launcher 0.5.0 on. The image is ready for the launcher's coming Get Games, which installs and removes Flathub's games
 with a controller: it lets the launcher uninstall Flatpaks, removes the runtimes nothing uses any more, and ships the
 console's lists of games and extras ([decision 0015](docs/decisions/0015-get-games.md)). No launcher release has Get
-Games yet. [`image.env`](image.env) names the launcher version the image carries. The [roadmap](#roadmap) says what
-comes next.
+Games yet. Steam's Switch to Desktop is meant to bring the launcher back with Steam still running; until a launcher
+release has the action it calls
+([pindu-launcher#836](https://github.com/Tim-van-Oudheusden/pindu-launcher/issues/836)), it closes Steam instead.
+[`image.env`](image.env) names the launcher version the image carries. The [roadmap](#roadmap) says what comes next.
 
 ## Images
 

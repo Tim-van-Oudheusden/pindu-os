@@ -2,7 +2,7 @@
 
 Status: accepted (2026-11-17), settles spec OS-17 (issue #29); amended 2026-11-23 for umu-launcher (issue #59); the
 polkit rule and the update service changed in [0015](0015-get-games.md); amended 2026-11-24 for Steam's network state
-and power entries (issue #68)
+and power entries (issue #68) and its Switch to Desktop (issue #69)
 
 ## Context
 
@@ -63,6 +63,15 @@ umu-launcher comes from its own release, pinned like the launcher.
     session use to power off, reboot and suspend without a password. A dead Shut Down button on a console is worse than
     a second way to do what the launcher's power dock does, and the grant adds no power the session does not already
     have.
+  - Switch to Desktop (issue #69): Steam runs `steamos-session-select`, which its sandbox lacks, so the entry did
+    nothing. On Pindu OS it means back to the launcher, with Steam left running so its downloads continue.
+    `system_files/usr/libexec/pindu-os/steam/steamos-session-select` asks the launcher over the session bus for its
+    `leave-big-picture` action (pindu-launcher#836), after checking the launcher is on the bus so the call never
+    D-Bus-activates a second one, and runs `steam -shutdown` when it does not answer. It ignores Steam's argument and
+    always exits 0. A sandbox cannot see the image's `/usr` (flatpak reserves it), so `tmpfiles.d/pindu.conf` copies
+    the folder to `/var/lib/pindu-os/steam` on every boot, root-owned. The override gives the sandbox that folder
+    read-only (`filesystems`), puts it first in `PATH` ahead of the manifest's `/app/bin:/app/utils/bin:/usr/bin`, and
+    lets Steam talk to `io.github.tim_van_oudheusden.pindu-launcher`.
 - MangoHud and GameMode stay RPMs (`40-session-packages.sh`): games outside Flatpak use them directly, and Flatpak
   games reach GameMode through `xdg-desktop-portal`.
 - umu-launcher is `/usr/bin/umu-run`, the zipapp from its GitHub release. `image.env` pins `UMU_VERSION` and
@@ -108,6 +117,14 @@ umu-launcher comes from its own release, pinned like the launcher.
   change it, and it would not follow image updates.
 - Copying the override into `/var` instead of linking it: a later image could not change it on devices that already
   have it.
+- `steamos-session-select` in Steam's own data folder, `~/.var/app/com.valvesoftware.Steam`, which the sandbox
+  already sees (the workaround in
+  [flathub/com.valvesoftware.Steam#1411](https://github.com/flathub/com.valvesoftware.Steam/issues/1411)): no
+  `filesystems` grant, but the script sits in `pindu`'s home where Steam can rewrite it, among Steam's own files.
+- A folder of the image given to the sandbox directly: flatpak refuses `/usr` and `/etc` paths ("reserved by
+  Flatpak"), and a link from `/var` into `/usr` is resolved on the host and refused the same way.
+- A `com.valvesoftware.Steam.Utility` extension, which lands in `/app/utils/bin`: a Flatpak this repository would
+  have to build, sign and publish, for one script.
 
 ## Consequences
 
@@ -139,5 +156,9 @@ umu-launcher comes from its own release, pinned like the launcher.
   ([flathub/com.valvesoftware.Steam#1411](https://github.com/flathub/com.valvesoftware.Steam/issues/1411) reports the
   same dead entry). A person checks on a device that Steam shows its connection and that both entries work; if they
   still do nothing, this grant comes out again.
+- The `PATH` in the override repeats the one Steam's manifest sets. If Flathub's manifest changes its `PATH`, the
+  override hides the change until this file follows.
+- Until a launcher release has pindu-launcher#836's action, Switch to Desktop closes Steam instead of bringing the
+  launcher back. If #836 names the action differently, the script follows it.
 - Revisit when the launcher offers uninstalling, when a store needs a remote other than Flathub, or when a variant
   (handheld, spec OS-21) ships a store preinstalled.

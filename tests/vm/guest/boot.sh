@@ -108,6 +108,16 @@ for name in org.freedesktop.NetworkManager org.freedesktop.login1; do
     check "Steam's Flatpak may talk to ${name} on the system bus" \
         grep -qx "${name}=talk" <<<"${steam_override}"
 done
+# Steam's Switch to Desktop (issue #69): the boot copies steamos-session-select where the
+# override hands it to Steam's sandbox, and the launcher answers on the bus name and object path
+# the script calls (its application actions, which pindu-launcher#836 adds one to).
+check "the boot puts steamos-session-select where Steam's sandbox is given it" \
+    test -x /var/lib/pindu-os/steam/steamos-session-select
+check "Steam's Flatpak may talk to the launcher on the session bus" \
+    grep -qx 'io.github.tim_van_oudheusden.pindu-launcher=talk' <<<"${steam_override}"
+check "the launcher lists its actions where steamos-session-select calls it" \
+    grep -q "'quit'" <(as_pindu gdbus call --session --timeout 10 --dest io.github.tim_van_oudheusden.pindu-launcher \
+        --object-path /io/github/tim_van_oudheusden/pindu_launcher --method org.gtk.Actions.List)
 steam=app/com.valvesoftware.Steam/x86_64/stable
 runtime=runtime/org.freedesktop.Platform/x86_64/25.08
 for action in app-install runtime-install app-update runtime-update; do

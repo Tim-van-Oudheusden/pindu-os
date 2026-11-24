@@ -124,7 +124,7 @@ lint:
     run() { podman run --rm --security-opt label=disable --volume "${PWD}:/repo:ro" --workdir /repo "$@"; }
 
     echo "== shellcheck"
-    mapfile -t scripts < <(git ls-files --cached --others --exclude-standard -- '*.sh' system_files/usr/bin)
+    mapfile -t scripts < <(git ls-files --cached --others --exclude-standard -- '*.sh' system_files/usr/bin system_files/usr/libexec)
     run "${SHELLCHECK_IMAGE}" --external-sources "${scripts[@]}"
 
     for section in %pre %post; do
