@@ -56,8 +56,11 @@ The image ships [umu-launcher](https://github.com/Open-Wine-Components/umu-launc
 the launcher starts itself, but no 32-bit graphics drivers for it
 ([decision 0013](docs/decisions/0013-game-sources.md)). No game store is preinstalled: the image ships Flatpak with
 Flathub as its system remote, and Pindu launcher installs Steam, Heroic or Lutris from it with Add a Store, from
-launcher 0.5.0 on. [`image.env`](image.env) names the launcher version the image carries. The [roadmap](#roadmap) says
-what comes next.
+launcher 0.5.0 on. The image is ready for the launcher's coming Get Games, which installs and removes Flathub's games
+with a controller: it lets the launcher uninstall Flatpaks, removes the runtimes nothing uses any more, and ships the
+console's lists of games and extras ([decision 0015](docs/decisions/0015-get-games.md)). No launcher release has Get
+Games yet. [`image.env`](image.env) names the launcher version the image carries. The [roadmap](#roadmap) says what
+comes next.
 
 ## Images
 
@@ -175,8 +178,9 @@ just build-iso && just test-install
    it in a gamescope session. Renovate brings each launcher release into `:testing`, and it reaches `:stable` once its
    hardware check passes ([decision 0012](docs/decisions/0012-launcher-releases.md)). Then the launcher speaking
    gamescope's window protocol for Steam games
-   ([pindu-launcher#377](https://github.com/Tim-van-Oudheusden/pindu-launcher/issues/377)), a boot splash, and variants
-   for handhelds and NVIDIA graphics. The [spec](docs/spec.md#phase-3-ready-for-games) lists the work packages.
+   ([pindu-launcher#377](https://github.com/Tim-van-Oudheusden/pindu-launcher/issues/377)), Get Games in the launcher
+   release that adds it, a boot splash, and variants for handhelds and NVIDIA graphics. The
+   [spec](docs/spec.md#phase-3-ready-for-games) lists the work packages.
 
 ## Contributing
 
