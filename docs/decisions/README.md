@@ -20,3 +20,4 @@ the cost; when a decision changes, add a new record rather than rewriting an acc
 | 0012 | [Launcher releases](0012-launcher-releases.md) | Final launcher releases only; a new launcher reaches `:stable` after its hardware check. |
 | 0013 | [Game sources](0013-game-sources.md) | Stores as Flatpaks from Flathub in the system installation; MangoHud and GameMode as RPMs. |
 | 0014 | [Base image registry](0014-base-image-registry.md) | `registry.fedoraproject.org`, which keeps superseded digests; quay.io expires them daily. |
+| 0015 | [Get Games](0015-get-games.md) | `pindu` may uninstall Flatpaks; root removes unused runtimes; the image ships Get Games' lists. |

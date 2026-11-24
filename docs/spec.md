@@ -242,12 +242,13 @@ These are named so nothing above blocks them. Each needs its own short spec befo
 | --- | --- | --- |
 | OS-16 | `KERNEL_FLAVOR=ogc` in `20-kernel.sh`, with MOK enrolment documented | Prebuilt from ublue akmods, no compile |
 | OS-17 | Game sources: Steam, umu-launcher, MangoHud, GameMode | Decide RPM in the image against Flatpak installed on first boot |
-| L-02 | Launcher speaks gamescope's `--steam` window protocol | Unblocks OS-18 |
-| OS-18 | Move the session to gamescope-session-plus with a `pindu` entry in `sessions.d` | Brings device quirks, HDR and VRR settings |
+| L-02 | Launcher speaks gamescope's `--steam` window protocol | Done in launcher 0.5.0 (pindu-launcher#390). Unblocked the first half of OS-18 |
+| OS-18 | Move the session to gamescope-session-plus with a `pindu` entry in `sessions.d` | Brings device quirks, HDR and VRR settings. First half done (issue #67): `pindu-session` runs gamescope with `--steam` ([decision 0003](decisions/0003-session.md#amendment-2026-11-24-steam-mode)); gamescope-session-plus remains |
 | L-03 | System panel in the launcher: power, network, Bluetooth, audio output, OS update | The OS ships the polkit rules and a small update helper |
 | OS-19 | chunkah layering for smaller update downloads | As Armada's final stage |
 | OS-20 | Boot splash and branding | Plymouth theme, os-release, installer artwork |
 | OS-21 | Variants: handheld (InputPlumber), NVIDIA | Build arguments on the same Containerfile |
+| OS-22 | What the image allows and ships for the launcher's Get Games: uninstalling Flatpaks, removing unused runtimes, the console's lists ([decision 0015](decisions/0015-get-games.md)) | The launcher does the work (its GG-1 to GG-6); no new package |
 
 ### Rules that go into `AGENTS.md`
 

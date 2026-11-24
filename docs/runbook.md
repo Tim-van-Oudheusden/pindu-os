@@ -196,7 +196,14 @@ The installer erases the PC's disk after you type `erase`, and refuses a PC with
 - [ ] A controller moves the focus.
 - [ ] Navigation sounds play.
 - [ ] On a 4K television the interface is sharp enough and not tiny (gamescope renders at 1080 lines and upscales).
-- [ ] A game that opens its own launcher window first (a Steam title) gets the focus and gives it back.
+- [ ] gamescope runs in Steam mode (`pgrep -a gamescope` shows `--steam`). Play on a Steam game: Steam's own window
+      stays hidden unless it asks something, the game shows, and the launcher is back when the game ends.
+- [ ] Guide over a running game opens the launcher's menu, and Home's Big Picture tile says Opening… before Steam
+      shows.
+- [ ] A game that is not Steam's (one through umu, one through Heroic or Lutris) starts and returns the same way.
+
+A black screen with gamescope running (`pgrep gamescope` prints a process, the cage fallback did not start) means the
+launcher's window never told Steam-mode gamescope to show it. The boot menu's second entry starts the previous image.
 
 If gamescope does not start, `vulkaninfo --summary` shows whether the GPU has a Vulkan driver, and
 `journalctl --user -u pindu-session` has gamescope's own messages. Extra gamescope arguments can be tried without a

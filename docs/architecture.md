@@ -95,9 +95,13 @@ real root is mounted. With the base image's initramfs the machine would be calle
    takes the display variables back out when the unit ends.
 4. **`pindu-session.service`** (a user unit, `Type=notify`) carries `graphical-session.target` and runs
    `pindu-session compositor`:
-   - It starts `gamescope --backend drm -- pindu-session client`. If the first connected display is taller than 1080
-     lines it adds `-w <width> -h 1080`: under Xwayland the launcher draws at scale 1, so gamescope renders it at 1080
-     lines and upscales.
+   - It starts `gamescope --backend drm --steam -- pindu-session client`. If the first connected display is taller
+     than 1080 lines it adds `-w <width> -h 1080`: under Xwayland the launcher draws at scale 1, so gamescope renders it
+     at 1080 lines and upscales.
+   - In Steam mode gamescope shows only windows with an app ID that the focus list on its root window names. The
+     launcher detects the mode, tags its window and writes the list, so it decides what is in front: Steam starts
+     hidden, a game comes forward when it starts, and the launcher comes back when it ends
+     ([decision 0003](decisions/0003-session.md#amendment-2026-11-24-steam-mode)).
    - A gamescope run shorter than 10 seconds counts as a failed start. After two in a row it runs
      `cage -- pindu-session client` instead. This is what happens in a VM and on a GPU without usable Vulkan.
    - A longer run that ends is the end of the session: the unit stops, the login script returns, and greetd restarts
@@ -132,10 +136,11 @@ with a locked password. Its home, `/var/home/pindu`, is created on first boot.
 
 A variant is a build argument of the same `Containerfile`: `VARIANT`, `KERNEL_FLAVOR` and `BASE_IMAGE`.
 
-## Game stores
+## Game stores and Get Games
 
 No store is preinstalled. The launcher's "add a store" flow installs Steam, Heroic or Lutris as Flatpaks from Flathub
-into the system installation ([decision 0013](decisions/0013-game-sources.md)):
+into the system installation ([decision 0013](decisions/0013-game-sources.md)), and its Get Games installs and removes
+Flathub's games and a few extras the same way ([decision 0015](decisions/0015-get-games.md)):
 
 - [`flathub.flatpakrepo`](../system_files/usr/share/flatpak/remotes.d/flathub.flatpakrepo) in
   `/usr/share/flatpak/remotes.d` makes `flathub`, with Flathub's signing key, the system installation's only remote.
@@ -144,10 +149,15 @@ into the system installation ([decision 0013](decisions/0013-game-sources.md)):
   [`40-pindu-os.preset`](../system_files/usr/lib/systemd/system-preset/40-pindu-os.preset) keeps it disabled through
   the first-boot presets, so the Fedora remote never appears.
 - [`50-pindu-os.rules`](../system_files/usr/share/polkit-1/rules.d/50-pindu-os.rules) lets `pindu`, in an active local
-  session, install and update apps and runtimes from `flathub` without a password, and nothing else Fedora's defaults
-  do not already allow.
-- `pindu-os-flatpak-update.timer` runs `flatpak update --system --noninteractive` 30 minutes after boot and every 12
-  hours, at idle priority.
+  session, install and update apps and runtimes from `flathub` and uninstall apps and runtimes without a password,
+  and nothing else Fedora's defaults do not already allow. Those defaults let the session download Flathub's catalogue
+  (`flatpak update --appstream --system`), which Get Games reads; adding or changing a remote stays refused.
+- `pindu-os-flatpak-update.timer` runs `flatpak update --system --noninteractive`, then
+  `flatpak uninstall --system --unused --noninteractive`, 30 minutes after boot and every 12 hours, at idle priority.
+  The second removes the runtimes a removed game left behind.
+- [`get-games.yaml`](../system_files/usr/share/pindu-launcher/distributor/get-games.yaml) in
+  `/usr/share/pindu-launcher/distributor` holds the console's Get Games lists: the categories that count as games, a
+  blocklist, extras and picks. Its path and format are a proposal until the launcher's work package GG-2 settles them.
 - `steam-devices` provides the controller and `uinput` udev rules that Flatpak Steam needs from the host. MangoHud and
   GameMode are RPMs in the image.
 - Steam's Flatpak gets a system-wide override,
@@ -199,10 +209,11 @@ signature policy and the agent instructions.
 ## Tests
 
 - **Container tests** ([`tests/container/`](../tests/container)) run inside the built image with `just test`: the
-  package lists, the launcher's version and libraries, the session script against stub compositors (fallback after two
-  failed gamescope starts, none when gamescope stays up, the 1080-line render size), the user and autologin
-  configuration, the variant's access rules, the signature policy, the update units, and the Flatpak remote, the
-  disabled Fedora remote unit, Steam's override, the controller rules and the Flatpak update units.
+  package lists, the launcher's version and libraries, the session script against stub compositors (gamescope in Steam
+  mode, fallback after two failed gamescope starts, none when gamescope stays up, the 1080-line render size), the user
+  and autologin configuration, the variant's access rules, the signature policy, the update units, and the Flatpak
+  remote, the disabled Fedora remote unit, Steam's override, the controller rules, the Flatpak update units (including
+  that an unused runtime is removed and a used one stays) and the Get Games lists.
 - **Workflow script tests** ([`tests/ci/`](../tests/ci)) run on the host with `just test-ci`: the promote gate
   against a stub registry and stub launcher issues, with `image.env` from a scratch git repository.
 - **VM tests** ([`tests/vm/`](../tests/vm)) boot real disk images in QEMU with KVM and UEFI firmware. The assertions
@@ -211,9 +222,9 @@ signature policy and the agent instructions.
   without an SSH server.
   - `boot.sh`: a `pindu` session on seat0 within 60 seconds of boot, a locked password, `pindu-session.service`
     active, a `pindu-launcher` process, sound, a portal that answers, a keyring that opens without a prompt, polkit's
-    answers for the system panel and for installing from Flathub, `flathub` in `pindu`'s view of the system
-    installation, Steam's override, and a screenshot that is not blank. With `--ssh` (dev image): SSH with an injected
-    key, and sudo.
+    answers for the system panel and for installing and uninstalling from Flathub, a catalogue download as `pindu`,
+    no remote added by `pindu`, `flathub` in `pindu`'s view of the system installation, Steam's override, and a
+    screenshot that is not blank. With `--ssh` (dev image): SSH with an injected key, and sudo.
   - `update.sh`: four boots. The guest switches to the image as served by a local registry, the host pushes a newer
     one, the update service stages it without a reboot, the next boot runs it, and `bootc rollback` returns.
   - `install.sh`: three installer runs. With two empty disks the installer must refuse and write nothing; with one disk
@@ -224,9 +235,10 @@ signature policy and the agent instructions.
 
 - **A VM cannot prove gamescope.** A virtual GPU has no Vulkan, so the VM tests exercise the cage fallback. gamescope
   on the DRM backend is checked on hardware ([runbook](runbook.md#testing-on-hardware)).
-- **Focus without `--steam`.** In plain gamescope a game window takes focus and hands it back. Games that open a
-  launcher window first (Steam titles) are untested; the fix is the launcher speaking gamescope's window protocol
-  ([pindu-launcher#377](https://github.com/Tim-van-Oudheusden/pindu-launcher/issues/377)).
+- **Steam mode is proven only on a device.** The launcher's side was tested with gamescope 3.17.0, headless and
+  nested; the image ships Fedora's 3.16.31, and the protocol is undocumented. A launcher that never tags its window
+  leaves gamescope up with a black screen, which the cage fallback does not catch: it only reacts to a gamescope that
+  exits ([decision 0003](decisions/0003-session.md#amendment-2026-11-24-steam-mode)).
 - **Wi-Fi in the launcher is for home networks.** Quick Access joins open and WPA/WPA2/WPA3 personal networks.
   Enterprise (802.1X) and hidden networks, static addresses, VPNs and proxies need `nmtui` on the dev image.
 - **A raw image does not grow on bare metal.** Fedora's `bootc-generic-growpart.service` only runs in VMs. Install on
