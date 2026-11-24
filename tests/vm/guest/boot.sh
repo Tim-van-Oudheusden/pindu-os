@@ -101,6 +101,13 @@ check_not "systemd refuses pindu to start another system unit" \
 # without a password. pkcheck asks polkit what flatpak's system helper asks on Deploy.
 check "pindu sees flathub in the system installation" \
     test "$(as_pindu systemd-run --user --quiet --wait --pipe -- flatpak remotes --system --columns=name)" = flathub
+# Steam's system-wide override (issue #68), in place after boot and before Steam is installed:
+# what `flatpak run` reads for Steam as pindu.
+steam_override=$(as_pindu flatpak override --system --show com.valvesoftware.Steam 2>/dev/null || true)
+for name in org.freedesktop.NetworkManager org.freedesktop.login1; do
+    check "Steam's Flatpak may talk to ${name} on the system bus" \
+        grep -qx "${name}=talk" <<<"${steam_override}"
+done
 steam=app/com.valvesoftware.Steam/x86_64/stable
 for action in app-install runtime-install app-update runtime-update; do
     check "polkit allows the launcher ${action} from flathub" \

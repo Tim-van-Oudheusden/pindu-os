@@ -1,0 +1,13 @@
+# System-wide permissions Pindu OS adds to Flathub's Steam (docs/decisions/0013-game-sources.md).
+# flatpak reads overrides only from /var/lib/flatpak/overrides; tmpfiles.d/pindu.conf links this
+# file there on every boot, so an image update changes it. The file may be there before Steam
+# is installed.
+#
+# NetworkManager: Steam's console interface reads the connection from it, and shows none
+# without it. It also lets Steam's network settings change connections as far as polkit allows
+# pindu (50-pindu-os.rules and Fedora's defaults).
+# login1: Steam's Restart and Shut Down entries ask the login service, which polkit already lets
+# pindu's active session power off, reboot and suspend.
+[System Bus Policy]
+org.freedesktop.NetworkManager=talk
+org.freedesktop.login1=talk
