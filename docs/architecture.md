@@ -63,7 +63,7 @@ not selected is never pulled.
 | `10-repos.sh` | Records the base image's repositories. v0 enables no other: Fedora 45 packages gamescope, cage and greetd. |
 | `20-kernel.sh` | Nothing for `fedora`. For `ogc`, replaces the kernel packages with the ones from `/kernel-rpms`. |
 | `30-base-packages.sh` | Mesa and Vulkan, firmware, PipeWire, NetworkManager with Wi-Fi, BlueZ, controller udev rules, fonts. Removes `openssh-server` and `sudo`. |
-| `40-session-packages.sh` | greetd, gamescope, Xwayland, cage, portals, dconf, gnome-keyring, GStreamer plugins, MangoHud, GameMode, Flatpak. |
+| `40-session-packages.sh` | greetd, gamescope, Xwayland, cage, portals, dconf, gnome-keyring, GStreamer plugins, MangoHud, GameMode, Flatpak, `desktop-file-utils` for store links. |
 | `50-launcher.sh` | Installs the launcher RPM and checks its version and libraries. |
 | `60-system-files.sh` | Copies `system_files/`, creates the `pindu` user, enables greetd, the graphical target and the update timers, disables Fedora's Flatpak remote unit. |
 | `70-os-release.sh` | Writes os-release (`ID=pindu-os`, `ID_LIKE=fedora`) and `/usr/share/pindu-os/image-info.json`, rebuilds the initramfs. |
