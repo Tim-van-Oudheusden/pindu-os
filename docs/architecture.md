@@ -1,7 +1,8 @@
 # Architecture
 
 Pindu OS is one x86_64 bootc image. It is Fedora 45's bootc base image plus a package list, one RPM
-([pindu-launcher](https://github.com/Tim-van-Oudheusden/pindu-launcher)), a session script and a handful of
+([pindu-launcher](https://github.com/Tim-van-Oudheusden/pindu-launcher)), one zipapp
+([umu-launcher](https://github.com/Open-Wine-Components/umu-launcher)), a session script and a handful of
 configuration files. Nothing is compiled in this repository. This page describes what is built and how it boots; the
 reasons are in [`decisions/`](decisions/README.md).
 
@@ -10,6 +11,7 @@ flowchart LR
     subgraph inputs["Pinned inputs (image.env)"]
         base["fedora-bootc:45"]
         rpm["pindu-launcher RPM"]
+        umu["umu-launcher zipapp"]
         akmods["akmods:ogc-45 (KERNEL_FLAVOR=ogc)"]
         tools["bootc-image-builder, linters"]
     end
@@ -23,6 +25,7 @@ flowchart LR
     end
     base --> build
     rpm --> build
+    umu --> build
     akmods -.-> build
     build --> publish --> vm
     publish -- "bootc upgrade" --> device
@@ -37,19 +40,21 @@ the workflows read that file; Renovate ([`renovate.json5`](../renovate.json5)) o
 | --- | --- |
 | `FEDORA_VERSION`, `BASE_IMAGE` | `registry.fedoraproject.org/fedora-bootc:45`, the base image |
 | `LAUNCHER_VERSION`, `LAUNCHER_SHA256` | The launcher's release RPM on GitHub Releases |
+| `UMU_VERSION`, `UMU_SHA256` | umu-launcher's release zipapp on GitHub Releases, which runs the launcher's Windows games |
 | `KERNEL_FLAVOR`, `AKMODS_IMAGE` | `fedora` keeps the base kernel; `ogc` takes the Open Gaming Collective kernel from ublue's akmods image |
 | `BIB_IMAGE` | bootc-image-builder, for disk images and the ISO |
 | `REGISTRY_IMAGE`, `SYFT_IMAGE`, `*LINT*_IMAGE`, `ZIZMOR_IMAGE` | Tools for tests, the SBOM and `just lint` |
 
 `just verify-inputs` checks that every digest resolves, that the base is a Fedora 45 bootc image, that the akmods image
-carries Universal Blue's signature and that the launcher RPM matches its SHA-256.
+carries Universal Blue's signature and that the launcher RPM and umu's zipapp match their SHA-256.
 
 ## Build
 
-The [`Containerfile`](../Containerfile) has three working stages:
+The [`Containerfile`](../Containerfile) has four working stages:
 
 - `ctx` holds `build_files/` and `system_files/`. The image stage bind-mounts it, so the scripts never become a layer.
 - `launcher` downloads the release RPM and fails unless its SHA-256 matches the pin.
+- `umu` downloads umu-launcher's zipapp, fails unless its SHA-256 matches the pin, and keeps only `umu-run`.
 - `image` starts from the base image and runs [`build_files/build.sh`](../build_files/build.sh), then
   `bootc container lint --fatal-warnings`.
 
@@ -65,6 +70,7 @@ not selected is never pulled.
 | `30-base-packages.sh` | Mesa and Vulkan, firmware, PipeWire, NetworkManager with Wi-Fi, BlueZ, controller udev rules, fonts. Removes `openssh-server` and `sudo`. |
 | `40-session-packages.sh` | greetd, gamescope, Xwayland, cage, portals, dconf, gnome-keyring, GStreamer plugins, MangoHud, GameMode, Flatpak, `desktop-file-utils` for store links. |
 | `50-launcher.sh` | Installs the launcher RPM and checks its version and libraries. |
+| `55-umu.sh` | Installs `umu-run` to `/usr/bin` and checks that it runs and reports the pinned version. |
 | `60-system-files.sh` | Copies `system_files/`, creates the `pindu` user, enables greetd, the graphical target and the update timers, disables Fedora's Flatpak remote unit. |
 | `70-os-release.sh` | Writes os-release (`ID=pindu-os`, `ID_LIKE=fedora`) and `/usr/share/pindu-os/image-info.json`, rebuilds the initramfs. |
 | `80-variant-dev.sh` | Only for `VARIANT=dev`: sshd, sudo, a shell on VT 2, debugging tools. |

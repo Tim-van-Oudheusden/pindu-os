@@ -12,7 +12,8 @@ This file is authoritative. `CLAUDE.md` is a short companion that defers to it.
 - `docs/spec.md` is the spec and implementation plan. Read the section an issue links to before you start.
   `docs/architecture.md` describes what is built, and `docs/decisions/` holds one record per design decision.
 - If an issue and the spec disagree, the issue wins; say so in the PR.
-- `Containerfile` has three stages: `ctx` (scripts and files), `launcher` (the verified RPM), `image`.
+- `Containerfile` has four stages: `ctx` (scripts and files), `launcher` (the verified RPM), `umu` (the verified
+  umu-launcher zipapp), `image`.
 - `build_files/build.sh` runs the numbered scripts in order. `system_files/` is copied to `/` as it is.
 - `tests/container/` are shell checks that run inside the built image; `tests/vm/` boots disk images in QEMU;
   `tests/ci/` tests the scripts in `.github/scripts/` that the workflows run.

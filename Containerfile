@@ -1,4 +1,4 @@
-# pindu-os: one bootc image from three stages. Every version arrives as a build argument from
+# pindu-os: one bootc image from four stages. Every version arrives as a build argument from
 # image.env (`just build` passes them), so nothing is pinned in this file.
 
 ARG BASE_IMAGE
@@ -23,6 +23,20 @@ RUN rpm="pindu-launcher-${LAUNCHER_VERSION}-1.fc${FEDORA_VERSION}.x86_64.rpm" \
     && sha256sum --check --strict SHA256SUMS \
     && rm SHA256SUMS
 
+# umu-launcher's release zipapp, which runs the launcher's own Windows games. The stage fails
+# unless the download matches the pinned SHA-256, and keeps only the umu-run program.
+FROM ${BASE_IMAGE} AS umu
+ARG UMU_VERSION
+ARG UMU_SHA256
+WORKDIR /umu
+RUN tar="umu-launcher-${UMU_VERSION}-zipapp.tar" \
+    && curl --fail --silent --show-error --location --retry 3 --remote-name \
+        "https://github.com/Open-Wine-Components/umu-launcher/releases/download/${UMU_VERSION}/${tar}" \
+    && echo "${UMU_SHA256}  ${tar}" >SHA256SUMS \
+    && sha256sum --check --strict SHA256SUMS \
+    && tar --extract --file "${tar}" --strip-components=1 umu/umu-run \
+    && rm "${tar}" SHA256SUMS
+
 # Kernel packages for 20-kernel.sh: nothing for the stock Fedora kernel, the akmods image
 # (with /kernel-rpms) for OGC. The stage that is not selected is never pulled.
 FROM scratch AS kernel-fedora
@@ -32,6 +46,7 @@ FROM kernel-${KERNEL_FLAVOR} AS kernel
 FROM ${BASE_IMAGE} AS image
 ARG FEDORA_VERSION
 ARG LAUNCHER_VERSION
+ARG UMU_VERSION
 ARG KERNEL_FLAVOR
 ARG VARIANT=prod
 ARG IMAGE_VERSION
@@ -40,6 +55,7 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=tmpfs,dst=/tmp \
     --mount=type=tmpfs,dst=/run \
     --mount=type=bind,from=launcher,source=/rpms,target=/tmp/launcher \
+    --mount=type=bind,from=umu,source=/umu,target=/tmp/umu \
     --mount=type=bind,from=kernel,source=/,target=/tmp/kernel \
     --mount=type=cache,dst=/var/cache/libdnf5 \
     /ctx/build_files/build.sh

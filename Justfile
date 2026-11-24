@@ -39,6 +39,8 @@ build variant="prod" kernel=env("KERNEL_FLAVOR"):
         --build-arg "FEDORA_VERSION=${FEDORA_VERSION}" \
         --build-arg "LAUNCHER_VERSION=${LAUNCHER_VERSION}" \
         --build-arg "LAUNCHER_SHA256=${LAUNCHER_SHA256}" \
+        --build-arg "UMU_VERSION=${UMU_VERSION}" \
+        --build-arg "UMU_SHA256=${UMU_SHA256}" \
         --build-arg "KERNEL_FLAVOR={{ kernel }}" \
         --build-arg "VARIANT={{ variant }}" \
         --build-arg "IMAGE_VERSION={{ image_version }}" \
@@ -49,7 +51,7 @@ build variant="prod" kernel=env("KERNEL_FLAVOR"):
         .
     echo "Built localhost/${name}:{{ tag }} ({{ image_version }})"
 
-# Check that every pin in image.env resolves: image digests, the launcher RPM, the akmods signature
+# Check that every pin in image.env resolves: image digests, the launcher RPM, umu's zipapp, the akmods signature
 [group('check')]
 verify-inputs:
     #!/usr/bin/env bash
@@ -99,6 +101,16 @@ verify-inputs:
         echo "ok    LAUNCHER_VERSION ${LAUNCHER_VERSION} matches LAUNCHER_SHA256"
     else
         echo "FAIL  ${url} does not match LAUNCHER_SHA256"
+        status=1
+    fi
+
+    # umu-launcher's zipapp must exist and match its SHA-256.
+    url="https://github.com/Open-Wine-Components/umu-launcher/releases/download/${UMU_VERSION}/umu-launcher-${UMU_VERSION}-zipapp.tar"
+    if sum=$(curl --fail --silent --show-error --location --retry 3 "${url}" | sha256sum | cut -d ' ' -f 1) &&
+        [[ ${sum} == "${UMU_SHA256}" ]]; then
+        echo "ok    UMU_VERSION ${UMU_VERSION} matches UMU_SHA256"
+    else
+        echo "FAIL  ${url} does not match UMU_SHA256"
         status=1
     fi
 

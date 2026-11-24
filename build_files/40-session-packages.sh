@@ -53,6 +53,10 @@ packages=(
     mangohud
     gamemode
 
+    # Windows games. The launcher runs the ones added with Add Game through umu-run, a Python
+    # zipapp from umu-launcher's release (55-umu.sh); this is the Python it runs on.
+    python3
+
     # Game stores. The launcher's "add a store" flow installs Steam, Heroic or Lutris from
     # Flathub into the system installation (docs/decisions/0013-game-sources.md).
     flatpak

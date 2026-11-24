@@ -1,6 +1,6 @@
 # 0013: Game sources
 
-Status: accepted (2026-11-17), settles spec OS-17 (issue #29)
+Status: accepted (2026-11-17), settles spec OS-17 (issue #29); amended 2026-11-23 for umu-launcher (issue #59)
 
 ## Context
 
@@ -10,9 +10,14 @@ first boot. pindu-launcher's "add a store" flow (pindu-launcher#378) installs St
 the `flatpak` CLI: into the system installation when `flatpak remotes --system` lists `flathub`, otherwise into the
 user's. The production image has no password and no polkit agent, so anything that asks for authentication fails.
 
+The launcher also runs Windows games itself: a game or its installer added with Add Game starts through `umu-run`,
+which the launcher looks for on `PATH`. The image had none, so the launcher's Library Health reported umu-launcher
+missing on the device test of 0.7.0-rc.2, with no way to install it on a read-only console (issue #59).
+
 ## Decision
 
-Stores are Flatpaks from Flathub, installed on request into the system installation. The game helpers stay RPMs.
+Stores are Flatpaks from Flathub, installed on request into the system installation. The game helpers stay RPMs, and
+umu-launcher comes from its own release, pinned like the launcher.
 
 - `flatpak` is in the image (`build_files/40-session-packages.sh`). No store is preinstalled; the launcher asks which
   one.
@@ -41,8 +46,18 @@ Stores are Flatpaks from Flathub, installed on request into the system installat
 - Controllers: `steam-devices`, from Fedora's own repositories, was already in the image. Its udev rules give the
   logged-in user Valve's and other controllers' HID nodes and `uinput`, which Flatpak Steam needs from the host.
 - MangoHud and GameMode stay RPMs (`40-session-packages.sh`): games outside Flatpak use them directly, and Flatpak
-  games reach GameMode through `xdg-desktop-portal`. umu-launcher is not in the image; Heroic and Lutris bring their
-  own.
+  games reach GameMode through `xdg-desktop-portal`.
+- umu-launcher is `/usr/bin/umu-run`, the zipapp from its GitHub release. `image.env` pins `UMU_VERSION` and
+  `UMU_SHA256`; the `umu` stage of the `Containerfile` downloads the file and fails unless it matches, and
+  `build_files/55-umu.sh` installs it and checks that it runs and reports the pinned version. The zipapp carries its
+  Python libraries (python-xlib, urllib3, truststore) and runs on Fedora's `python3`, which `40-session-packages.sh`
+  lists for it. Renovate follows its releases the way it follows the launcher's. Heroic and Lutris keep bringing
+  their own.
+- No 32-bit graphics drivers. umu starts a game in the Steam Linux Runtime container, which takes its graphics drivers
+  from the host, and the image has only 64-bit Mesa. Proton runs a 32-bit Windows game as a 32-bit Linux process
+  unless its WoW64 mode is switched on (`PROTON_USE_WOW64=1`, still opt-in and experimental), so a 32-bit Windows game
+  added with Add Game gets no GL or Vulkan driver and is expected not to start. Games from Steam, Heroic and Lutris are
+  not affected: their Flatpak runtimes bring 32-bit drivers of their own.
 
 ## Alternatives considered
 
@@ -58,6 +73,17 @@ Stores are Flatpaks from Flathub, installed on request into the system installat
   every user would download their own copy. The launcher still falls back to it where there is no system remote.
 - No update timer, leaving updates to the stores or the launcher: Flatpak apps would never update on a console without
   a settings UI, and the runtimes carry security fixes.
+- umu-launcher from Fedora: there is no package; its review was closed as WONTFIX
+  ([Red Hat Bugzilla 2318468](https://bugzilla.redhat.com/show_bug.cgi?id=2318468)).
+- umu-launcher's release RPM: upstream builds it for particular Fedora releases (fc43 and fc44 for 1.4.4), and the fc44
+  one requires `python(abi) = 3.14` and installs into `python3.14/site-packages`. Fedora 45 has Python 3.15, so it
+  does not install. The zipapp has no such tie.
+- umu-launcher from Terra or a COPR: a new package repository for one program.
+- Packaging umu-launcher under `packages/` (decision 0008): a build in this repository for a file upstream already
+  ships.
+- 32-bit Mesa (`mesa-dri-drivers`, `mesa-vulkan-drivers`, `vulkan-loader`, the GL and EGL libraries, all `i686`):
+  38 packages, 417 MiB installed (89 MiB to download), `llvm-libs` alone 150 MiB, which every image update carries.
+  The Steam RPM was turned down above for the same stack.
 
 ## Consequences
 
@@ -70,6 +96,11 @@ Stores are Flatpaks from Flathub, installed on request into the system installat
   launcher needs `app-uninstall` granted the same way when it offers that.
 - flatpak applies `remotes.d` once per installation: a later image with a changed `flathub.flatpakrepo` does not
   change the remote on devices that already have it, and a remote the user removed is not added back.
+- The first Windows game that umu starts downloads the Steam Linux Runtime and a Proton build into `pindu`'s home, so
+  that start needs a network and takes a while; the launcher follows the download. umu's optional modules for delta
+  updates (`cbor2`, `xxhash`, `pyzstd`) are not in the image, so a new Proton build downloads whole.
+- A 32-bit Windows game added with Add Game is expected not to start until Proton runs 32-bit games through WoW64 by
+  default or the image ships 32-bit Mesa; revisit then, or when a device test shows otherwise.
 - MangoHud inside Flatpak games needs Flathub's `org.freedesktop.Platform.VulkanLayer.MangoHud` extension; the host
   RPM does not reach the sandbox.
 - A console that installed a store before `desktop-file-utils` was in the image has no `mimeinfo.cache` until flatpak
