@@ -1,7 +1,8 @@
 # 0013: Game sources
 
 Status: accepted (2026-11-17), settles spec OS-17 (issue #29); amended 2026-11-23 for umu-launcher (issue #59); the
-polkit rule and the update service changed in [0015](0015-get-games.md)
+polkit rule and the update service changed in [0015](0015-get-games.md); amended 2026-11-24 for Steam's network state
+and power entries (issue #68)
 
 ## Context
 
@@ -47,6 +48,21 @@ umu-launcher comes from its own release, pinned like the launcher.
   environment generator already puts the exports in the session's `XDG_DATA_DIRS`.
 - Controllers: `steam-devices`, from Fedora's own repositories, was already in the image. Its udev rules give the
   logged-in user Valve's and other controllers' HID nodes and `uinput`, which Flatpak Steam needs from the host.
+- Steam's Flatpak gets a system-wide override (issue #68). Its manifest lets it reach UDisks2 and UPower on the system
+  bus, but not NetworkManager, which Steam's console interface reads the connection from, nor the login service
+  (`org.freedesktop.login1`), which restarts and powers off. The device test of 0.7.0-rc.3 found Steam signed in and
+  downloading while it showed no network connection, and its Restart and Shut Down entries doing nothing.
+  `system_files/usr/share/pindu-os/flatpak/overrides/com.valvesoftware.Steam` grants `talk` to both names. flatpak
+  reads system overrides only from `/var/lib/flatpak/overrides`, so `tmpfiles.d/pindu.conf` links the file there on
+  every boot: an image update changes it, it is there before Steam is installed, and a file root puts there instead is
+  left alone.
+  - NetworkManager: Steam shows the connection it uses. Its network settings can then also change connections, as far
+    as polkit lets `pindu`'s active session: connect and disconnect, scan for Wi-Fi and save system-wide connections
+    (Fedora's defaults and `50-pindu-os.rules`), which the launcher's Quick Access already does.
+  - Power: granted. Steam's Restart and Shut Down then ask the login service, which polkit already lets the active
+    session use to power off, reboot and suspend without a password. A dead Shut Down button on a console is worse than
+    a second way to do what the launcher's power dock does, and the grant adds no power the session does not already
+    have.
 - MangoHud and GameMode stay RPMs (`40-session-packages.sh`): games outside Flatpak use them directly, and Flatpak
   games reach GameMode through `xdg-desktop-portal`.
 - umu-launcher is `/usr/bin/umu-run`, the zipapp from its GitHub release. `image.env` pins `UMU_VERSION` and
@@ -86,6 +102,12 @@ umu-launcher comes from its own release, pinned like the launcher.
 - 32-bit Mesa (`mesa-dri-drivers`, `mesa-vulkan-drivers`, `vulkan-loader`, the GL and EGL libraries, all `i686`):
   38 packages, 417 MiB installed (89 MiB to download), `llvm-libs` alone 150 MiB, which every image update carries.
   The Steam RPM was turned down above for the same stack.
+- Leaving Steam's power entries dead and pointing to the launcher's power dock: one permission fixes them, and a
+  console entry that does nothing reads as a fault.
+- The override in Steam's own data folder or the user's installation (`flatpak override --user`): `pindu` could
+  change it, and it would not follow image updates.
+- Copying the override into `/var` instead of linking it: a later image could not change it on devices that already
+  have it.
 
 ## Consequences
 
@@ -109,8 +131,13 @@ umu-launcher comes from its own release, pinned like the launcher.
 - A console that installed a store before `desktop-file-utils` was in the image has no `mimeinfo.cache` until flatpak
   next installs, updates or removes an app there; its store links fail until then.
 - `tests/container/flatpak.sh` checks the remote, the key, the disabled Fedora unit across the first-boot presets,
-  the controller rules, the update units, and that a `steam://` link opens the app an install exports for it.
-  `tests/vm/guest/boot.sh` checks that `pindu` sees `flathub`, asks polkit about each Flatpak action from the
-  launcher's process, and opens a `steam://` link with the launcher's environment.
+  Steam's override after the first-boot tmpfiles run, the controller rules, the update units, and that a `steam://`
+  link opens the app an install exports for it. `tests/vm/guest/boot.sh` checks that `pindu` sees `flathub` and
+  Steam's override, asks polkit about each Flatpak action from the launcher's process, and opens a `steam://` link with
+  the launcher's environment.
+- Whether Steam's Restart and Shut Down use the login service outside SteamOS is not documented
+  ([flathub/com.valvesoftware.Steam#1411](https://github.com/flathub/com.valvesoftware.Steam/issues/1411) reports the
+  same dead entry). A person checks on a device that Steam shows its connection and that both entries work; if they
+  still do nothing, this grant comes out again.
 - Revisit when the launcher offers uninstalling, when a store needs a remote other than Flathub, or when a variant
   (handheld, spec OS-21) ships a store preinstalled.

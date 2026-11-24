@@ -160,6 +160,11 @@ Flathub's games and a few extras the same way ([decision 0015](decisions/0015-ge
   blocklist, extras and picks. Its path and format are a proposal until the launcher's work package GG-2 settles them.
 - `steam-devices` provides the controller and `uinput` udev rules that Flatpak Steam needs from the host. MangoHud and
   GameMode are RPMs in the image.
+- Steam's Flatpak gets a system-wide override,
+  [`com.valvesoftware.Steam`](../system_files/usr/share/pindu-os/flatpak/overrides/com.valvesoftware.Steam), that lets
+  it talk to NetworkManager (so it shows its connection) and the login service (so its Restart and Shut Down work).
+  flatpak reads system overrides only from `/var/lib/flatpak/overrides`; `tmpfiles.d/pindu.conf` links the image's
+  file there on every boot, before Steam is installed.
 
 ## Updates and trust
 
@@ -207,8 +212,8 @@ signature policy and the agent instructions.
   package lists, the launcher's version and libraries, the session script against stub compositors (gamescope in Steam
   mode, fallback after two failed gamescope starts, none when gamescope stays up, the 1080-line render size), the user
   and autologin configuration, the variant's access rules, the signature policy, the update units, and the Flatpak
-  remote, the disabled Fedora remote unit, the controller rules, the Flatpak update units (including that an unused
-  runtime is removed and a used one stays) and the Get Games lists.
+  remote, the disabled Fedora remote unit, Steam's override, the controller rules, the Flatpak update units (including
+  that an unused runtime is removed and a used one stays) and the Get Games lists.
 - **Workflow script tests** ([`tests/ci/`](../tests/ci)) run on the host with `just test-ci`: the promote gate
   against a stub registry and stub launcher issues, with `image.env` from a scratch git repository.
 - **VM tests** ([`tests/vm/`](../tests/vm)) boot real disk images in QEMU with KVM and UEFI firmware. The assertions
@@ -218,8 +223,8 @@ signature policy and the agent instructions.
   - `boot.sh`: a `pindu` session on seat0 within 60 seconds of boot, a locked password, `pindu-session.service`
     active, a `pindu-launcher` process, sound, a portal that answers, a keyring that opens without a prompt, polkit's
     answers for the system panel and for installing and uninstalling from Flathub, a catalogue download as `pindu`,
-    no remote added by `pindu`, `flathub` in `pindu`'s view of the system installation, and a screenshot that is not
-    blank. With `--ssh` (dev image): SSH with an injected key, and sudo.
+    no remote added by `pindu`, `flathub` in `pindu`'s view of the system installation, Steam's override, and a
+    screenshot that is not blank. With `--ssh` (dev image): SSH with an injected key, and sudo.
   - `update.sh`: four boots. The guest switches to the image as served by a local registry, the host pushes a newer
     one, the update service stages it without a reboot, the next boot runs it, and `bootc rollback` returns.
   - `install.sh`: three installer runs. With two empty disks the installer must refuse and write nothing; with one disk

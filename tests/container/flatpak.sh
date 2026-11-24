@@ -2,17 +2,30 @@
 # Issue #29 (spec OS-17): Flatpak with Flathub as the system installation's only remote,
 # Fedora's remote kept out also after first boot, controller udev rules for Flatpak Steam,
 # and the timer that updates Flatpak apps. Issue #66 (spec OS-22): the update service removes
-# unused runtimes, and the image carries the console's lists for the launcher's Get Games. The
-# polkit rule needs a logind session to be evaluated; tests/vm/guest/boot.sh checks it from the
-# launcher's process.
+# unused runtimes, and the image carries the console's lists for the launcher's Get Games.
+# Issue #68: Steam's system-wide override, there from first boot. The polkit rule needs a
+# logind session to be evaluated; tests/vm/guest/boot.sh checks it from the launcher's process.
 set -euo pipefail
 # shellcheck source=tests/container/lib.sh
 source /tests/lib.sh
 
-# A device starts with an empty /var: the system installation does not exist until flatpak
-# first opens it, which is when it applies /usr/share/flatpak/remotes.d.
+# A device starts with an empty /var, which systemd-tmpfiles fills on first boot. The system
+# installation does not exist until flatpak first opens it, which is when it applies
+# /usr/share/flatpak/remotes.d.
 rm -rf /var/lib/flatpak
-mkdir /var/lib/flatpak
+systemd-tmpfiles --create --prefix=/var/lib/flatpak >/dev/null 2>&1 || true
+
+# Steam's override (issue #68) is in place before Steam is installed, and reads back as the
+# permissions the image grants: NetworkManager for the connection Steam shows, the login
+# service for its Restart and Shut Down entries.
+steam_override=$(flatpak override --system --show com.valvesoftware.Steam 2>/dev/null || true)
+check "Steam's override lets it talk to NetworkManager on the system bus" \
+    grep -qx 'org.freedesktop.NetworkManager=talk' <<<"${steam_override}"
+check "Steam's override lets it talk to the login service on the system bus" \
+    grep -qx 'org.freedesktop.login1=talk' <<<"${steam_override}"
+check_eq "Steam's override is the image's copy, so an image update changes it" \
+    /usr/share/pindu-os/flatpak/overrides/com.valvesoftware.Steam \
+    "$(readlink /var/lib/flatpak/overrides/com.valvesoftware.Steam)"
 
 check_eq "the system installation's remotes are flathub alone, disabled ones included" \
     flathub "$(flatpak remotes --system --show-disabled --columns=name)"
