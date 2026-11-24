@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # OS-06: `pindu-session compositor` starts the launcher in gamescope and falls back to cage
 # only when gamescope fails to stay up twice in a row. gamescope and cage are stubs on PATH
-# that record how they were called; the "few seconds" threshold is shortened to 2.
+# that record how they were called; the "few seconds" threshold is shortened to 2. Issue #67:
+# gamescope runs in Steam mode, so the launcher decides which window is in front.
 set -euo pipefail
 # shellcheck source=tests/container/lib.sh
 source /tests/lib.sh
@@ -49,8 +50,10 @@ run_compositor fail fail
 check_eq "gamescope exiting at once is tried twice" 2 "$(calls gamescope)"
 check_eq "then cage is started once" 1 "$(calls cage)"
 check_eq "cage runs the session client" "-- /usr/bin/pindu-session client" "$(cat "${work}/cage.calls")"
-check_eq "gamescope ran the session client on the DRM backend" \
-    "--backend drm -- /usr/bin/pindu-session client" "$(head -n 1 "${work}/gamescope.calls")"
+check_eq "gamescope ran the session client in Steam mode on the DRM backend" \
+    "--backend drm --steam -- /usr/bin/pindu-session client" "$(head -n 1 "${work}/gamescope.calls")"
+check_eq "the retry starts gamescope the same way" \
+    "$(sed -n 1p "${work}/gamescope.calls")" "$(sed -n 2p "${work}/gamescope.calls")"
 
 run_compositor stay
 check_eq "gamescope that stays up is started once" 1 "$(calls gamescope)"
@@ -66,12 +69,12 @@ echo connected >"${work}/drm/card1-HDMI-A-1/status"
 printf '3840x2160\n1920x1080\n' >"${work}/drm/card1-HDMI-A-1/modes"
 run_compositor stay
 check_eq "a 4K display gets a 1080-line render size" \
-    "--backend drm -w 1920 -h 1080 -- /usr/bin/pindu-session client" "$(cat "${work}/gamescope.calls")"
+    "--backend drm --steam -w 1920 -h 1080 -- /usr/bin/pindu-session client" "$(cat "${work}/gamescope.calls")"
 
 printf '1920x1080\n' >"${work}/drm/card1-HDMI-A-1/modes"
 run_compositor stay
 check_eq "a 1080p display gets no size arguments" \
-    "--backend drm -- /usr/bin/pindu-session client" "$(cat "${work}/gamescope.calls")"
+    "--backend drm --steam -- /usr/bin/pindu-session client" "$(cat "${work}/gamescope.calls")"
 
 # The files the session is made of.
 check "the user unit runs pindu-session compositor" \

@@ -173,10 +173,11 @@ just build-iso && just test-install
 3. **Ready for games.** Pindu launcher 0.5.0 in `:stable`, which installs Steam, Heroic or Lutris from Flathub
    ([pindu-launcher#378](https://github.com/Tim-van-Oudheusden/pindu-launcher/issues/378)) and runs games in front of
    it in a gamescope session. Renovate brings each launcher release into `:testing`, and it reaches `:stable` once its
-   hardware check passes ([decision 0012](docs/decisions/0012-launcher-releases.md)). Then the launcher speaking
-   gamescope's window protocol for Steam games
-   ([pindu-launcher#377](https://github.com/Tim-van-Oudheusden/pindu-launcher/issues/377)), a boot splash, and variants
-   for handhelds and NVIDIA graphics. The [spec](docs/spec.md#phase-3-ready-for-games) lists the work packages.
+   hardware check passes ([decision 0012](docs/decisions/0012-launcher-releases.md)). The session runs gamescope in
+   Steam mode, so the launcher, from 0.5.0 on, keeps Steam behind it and brings games to the front and itself back
+   ([#67](https://github.com/Tim-van-Oudheusden/pindu-os/issues/67)); that still needs its check on a device. Then a
+   boot splash, and variants for handhelds and NVIDIA graphics. The [spec](docs/spec.md#phase-3-ready-for-games) lists
+   the work packages.
 
 ## Contributing
 
