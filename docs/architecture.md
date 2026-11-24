@@ -95,9 +95,13 @@ real root is mounted. With the base image's initramfs the machine would be calle
    takes the display variables back out when the unit ends.
 4. **`pindu-session.service`** (a user unit, `Type=notify`) carries `graphical-session.target` and runs
    `pindu-session compositor`:
-   - It starts `gamescope --backend drm -- pindu-session client`. If the first connected display is taller than 1080
-     lines it adds `-w <width> -h 1080`: under Xwayland the launcher draws at scale 1, so gamescope renders it at 1080
-     lines and upscales.
+   - It starts `gamescope --backend drm --steam -- pindu-session client`. If the first connected display is taller
+     than 1080 lines it adds `-w <width> -h 1080`: under Xwayland the launcher draws at scale 1, so gamescope renders it
+     at 1080 lines and upscales.
+   - In Steam mode gamescope shows only windows with an app ID that the focus list on its root window names. The
+     launcher detects the mode, tags its window and writes the list, so it decides what is in front: Steam starts
+     hidden, a game comes forward when it starts, and the launcher comes back when it ends
+     ([decision 0003](decisions/0003-session.md#amendment-2026-11-24-steam-mode)).
    - A gamescope run shorter than 10 seconds counts as a failed start. After two in a row it runs
      `cage -- pindu-session client` instead. This is what happens in a VM and on a GPU without usable Vulkan.
    - A longer run that ends is the end of the session: the unit stops, the login script returns, and greetd restarts
@@ -200,11 +204,11 @@ signature policy and the agent instructions.
 ## Tests
 
 - **Container tests** ([`tests/container/`](../tests/container)) run inside the built image with `just test`: the
-  package lists, the launcher's version and libraries, the session script against stub compositors (fallback after two
-  failed gamescope starts, none when gamescope stays up, the 1080-line render size), the user and autologin
-  configuration, the variant's access rules, the signature policy, the update units, and the Flatpak remote, the
-  disabled Fedora remote unit, the controller rules, the Flatpak update units (including that an unused runtime is
-  removed and a used one stays) and the Get Games lists.
+  package lists, the launcher's version and libraries, the session script against stub compositors (gamescope in Steam
+  mode, fallback after two failed gamescope starts, none when gamescope stays up, the 1080-line render size), the user
+  and autologin configuration, the variant's access rules, the signature policy, the update units, and the Flatpak
+  remote, the disabled Fedora remote unit, the controller rules, the Flatpak update units (including that an unused
+  runtime is removed and a used one stays) and the Get Games lists.
 - **Workflow script tests** ([`tests/ci/`](../tests/ci)) run on the host with `just test-ci`: the promote gate
   against a stub registry and stub launcher issues, with `image.env` from a scratch git repository.
 - **VM tests** ([`tests/vm/`](../tests/vm)) boot real disk images in QEMU with KVM and UEFI firmware. The assertions
@@ -226,9 +230,10 @@ signature policy and the agent instructions.
 
 - **A VM cannot prove gamescope.** A virtual GPU has no Vulkan, so the VM tests exercise the cage fallback. gamescope
   on the DRM backend is checked on hardware ([runbook](runbook.md#testing-on-hardware)).
-- **Focus without `--steam`.** In plain gamescope a game window takes focus and hands it back. Games that open a
-  launcher window first (Steam titles) are untested; the fix is the launcher speaking gamescope's window protocol
-  ([pindu-launcher#377](https://github.com/Tim-van-Oudheusden/pindu-launcher/issues/377)).
+- **Steam mode is proven only on a device.** The launcher's side was tested with gamescope 3.17.0, headless and
+  nested; the image ships Fedora's 3.16.31, and the protocol is undocumented. A launcher that never tags its window
+  leaves gamescope up with a black screen, which the cage fallback does not catch: it only reacts to a gamescope that
+  exits ([decision 0003](decisions/0003-session.md#amendment-2026-11-24-steam-mode)).
 - **Wi-Fi in the launcher is for home networks.** Quick Access joins open and WPA/WPA2/WPA3 personal networks.
   Enterprise (802.1X) and hidden networks, static addresses, VPNs and proxies need `nmtui` on the dev image.
 - **A raw image does not grow on bare metal.** Fedora's `bootc-generic-growpart.service` only runs in VMs. Install on

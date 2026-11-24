@@ -80,6 +80,12 @@ gamescope_size_args() {
     return 0
 }
 
+# gamescope runs in Steam mode (--steam): it shows only windows with an app ID that the focus
+# list on the root window names. The launcher detects the mode, tags its window and writes that
+# list, so it decides what is in front: it starts Steam hidden, brings a game forward and itself
+# back when the game ends, and opens its menu over a game on Guide (docs/decisions/0003-session.md).
+# A launcher that never tags its window leaves gamescope up with nothing on screen; the cage
+# fallback below only reacts to a gamescope that exits.
 compositor() {
     local quick_exits=0 started status size_args extra_args
     read -r -a size_args <<<"$(gamescope_size_args)"
@@ -90,7 +96,7 @@ compositor() {
     while ((quick_exits < MAX_QUICK_EXITS)); do
         started=${SECONDS}
         status=0
-        gamescope --backend drm "${size_args[@]}" "${extra_args[@]}" -- "$0" client || status=$?
+        gamescope --backend drm --steam "${size_args[@]}" "${extra_args[@]}" -- "$0" client || status=$?
         if ((SECONDS - started >= MIN_UPTIME)); then
             # gamescope ran and ended, with the launcher or by itself: the session is over.
             exit "${status}"
